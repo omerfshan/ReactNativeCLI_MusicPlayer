@@ -1,7 +1,8 @@
-import RNFS from 'react-native-fs';
+import * as RNFS from '@dr.pogodin/react-native-fs';
+import { getAudioMetadata } from '@missingcore/audio-metadata';
 import { MUSIC_FOLDER_PATH } from '../constants/paths';
 import { Song } from '../types/song';
-import { getAudioMetadata } from '@missingcore/audio-metadata';
+
 export const createFolderIfNotExist = async (): Promise<void> => {
   const folderExists = await RNFS.exists(MUSIC_FOLDER_PATH);
 
@@ -23,27 +24,32 @@ export const getMp3FilesFromMusicFolder = async (): Promise<Song[]> => {
     mp3Files.map(async file => {
       try {
         const uri = `file://${file.path}`;
+
         const { metadata } = await getAudioMetadata(uri, [
           'artist',
           'artwork',
           'name',
         ] as const);
+
         return {
           name: metadata.name ?? file.name.replace(/\.mp3$/i, ''),
           path: file.path,
           artist: metadata.artist ?? 'Bilinmeyen Sanatçı',
           artwork: metadata.artwork ?? undefined,
-        } as Song;
-      } catch {
+        };
+      } catch (error) {
+        console.error('Metadata Error:', error);
+
         return {
           name: file.name.replace(/\.mp3$/i, ''),
           path: file.path,
           artist: 'Bilinmeyen Sanatçı',
           artwork: undefined,
-        } as Song;
+        };
       }
     }),
   );
+
   return songs;
 };
 

@@ -6,6 +6,8 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
+  Image,
+  StyleSheet,
 } from 'react-native';
 
 import {
@@ -40,7 +42,7 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <View>
+      <View style={styles.centered}>
         <ActivityIndicator />
         <Text>Yükleniyor...</Text>
       </View>
@@ -48,10 +50,10 @@ export default function HomeScreen() {
   }
 
   return (
-    <View>
-      <Text>Music Player</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Music Player</Text>
 
-      <Text>{musicFolderPath}</Text>
+      <Text style={styles.path}>{musicFolderPath}</Text>
 
       <Button title="Yenile" onPress={loadSongs} />
 
@@ -62,9 +64,20 @@ export default function HomeScreen() {
           data={songs}
           keyExtractor={item => item.path}
           renderItem={({ item }) => (
-            <View>
-              <Text>{item.name}</Text>
-              <Text>{item.path}</Text>
+            <View style={styles.card}>
+              {item.artwork ? (
+                <Image source={{ uri: item.artwork }} style={styles.artwork} />
+              ) : (
+                <View style={[styles.artwork, styles.artworkPlaceholder]} />
+              )}
+              <View style={styles.meta}>
+                <Text style={styles.songName} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <Text style={styles.artist} numberOfLines={1}>
+                  {item.artist}
+                </Text>
+              </View>
             </View>
           )}
         />
@@ -72,3 +85,52 @@ export default function HomeScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+    paddingTop: 48,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  path: {
+    fontSize: 12,
+    opacity: 0.6,
+    marginBottom: 12,
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    gap: 12,
+  },
+  artwork: {
+    width: 56,
+    height: 56,
+    borderRadius: 6,
+  },
+  artworkPlaceholder: {
+    backgroundColor: '#ddd',
+  },
+  meta: {
+    flex: 1,
+  },
+  songName: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  artist: {
+    fontSize: 13,
+    opacity: 0.7,
+    marginTop: 2,
+  },
+});
