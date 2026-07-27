@@ -1,7 +1,7 @@
 import RNFS from 'react-native-fs';
 import { MUSIC_FOLDER_PATH } from '../constants/paths';
 import { Song } from '../types/song';
-
+import { getAudioMetadata } from '@missingcore/audio-metadata';
 export const createFolderIfNotExist = async (): Promise<void> => {
   const folderExists = await RNFS.exists(MUSIC_FOLDER_PATH);
 
@@ -15,16 +15,36 @@ export const getMp3FilesFromMusicFolder = async (): Promise<Song[]> => {
 
   const files = await RNFS.readDir(MUSIC_FOLDER_PATH);
 
-  const mp3Files: Song[] = files
+  const mp3Files = files
     .filter(file => file.isFile())
-    .filter(file => file.name.toLowerCase().endsWith('.mp3'))
-    .map(file => ({
-      name: file.name,
-      path: file.path,
-      size: file.size,
-    }));
+    .filter(file => file.name.toLowerCase().endsWith('.mp3'));
 
-  return mp3Files;
+  const songs: Song[] = await Promise.all(
+    mp3Files.map(async file => {
+      try {
+        const uri = `file://${file.path}`;
+        const { metadata } = await getAudioMetadata(uri, [
+          'artist',
+          'artwork',
+          'name',
+        ] as const);
+        return {
+          name: metadata.name ?? file.name.replace(/\.mp3$/i, ''),
+          path: file.path,
+          artist: metadata.artist ?? 'Bilinmeyen Sanatçı',
+          artwork: metadata.artwork ?? undefined,
+        } as Song;
+      } catch {
+        return {
+          name: file.name.replace(/\.mp3$/i, ''),
+          path: file.path,
+          artist: 'Bilinmeyen Sanatçı',
+          artwork: undefined,
+        } as Song;
+      }
+    }),
+  );
+  return songs;
 };
 
 export const getMusicFolderPath = (): string => {
