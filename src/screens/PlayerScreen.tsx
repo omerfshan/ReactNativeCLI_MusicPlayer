@@ -16,7 +16,7 @@ const PlayerScreen = ({ song }: Props) => {
   const [liked, setLiked] = useState(false);
 
   return (
-    <View className="flex-1 bg-black">
+    <View className="flex-col bg-black">
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 pt-12 pb-4">
         <TouchableOpacity>
@@ -31,7 +31,7 @@ const PlayerScreen = ({ song }: Props) => {
       {/* Album Art */}
       <View className="items-center mt-8 mb-10">
         <Image
-          source={{ uri: song?.artwork || 'https://picsum.photos/600/600' }}
+          source={{ uri: song?.artwork || '' }}
           style={{ width: width - 80, height: width - 80 }}
           className="rounded-2xl"
           resizeMode="cover"
