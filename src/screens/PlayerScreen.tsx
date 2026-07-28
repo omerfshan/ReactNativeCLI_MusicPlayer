@@ -1,7 +1,6 @@
 // screens/PlayerScreen.tsx
 import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, Dimensions } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import Slider from '@react-native-community/slider';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Song } from '../types/song';
@@ -17,23 +16,31 @@ const PlayerScreen = ({ song }: Props) => {
   const [liked, setLiked] = useState(false);
 
   return (
-    <LinearGradient
-      colors={['#6b5b73', '#7a5f6e', '#8a6a5f']}
-      className="flex-1"
-    >
-      <View className="flex-1 px-6 pb-4">
-        {/* Album Art */}
-        <View className="items-center mt-4">
-          <Image
-            source={{ uri: song?.artwork || 'https://picsum.photos/600/600' }}
-            style={{ width: width - 48, height: width - 48 }}
-            className="rounded-2xl"
-            resizeMode="cover"
-          />
-        </View>
+    <View className="flex-1 bg-black">
+      {/* Header */}
+      <View className="flex-row items-center justify-between px-4 pt-12 pb-4">
+        <TouchableOpacity>
+          <Ionicons name="chevron-down" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text className="text-white text-lg font-semibold">Şimdi Çalıyor</Text>
+        <TouchableOpacity>
+          <Ionicons name="ellipsis-horizontal" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
 
-        {/* Track Info */}
-        <View className="flex-row items-center justify-between mt-8">
+      {/* Album Art */}
+      <View className="items-center mt-8 mb-10">
+        <Image
+          source={{ uri: song?.artwork || 'https://picsum.photos/600/600' }}
+          style={{ width: width - 80, height: width - 80 }}
+          className="rounded-2xl"
+          resizeMode="cover"
+        />
+      </View>
+
+      {/* Track Info */}
+      <View className="px-6">
+        <View className="flex-row items-center justify-between">
           <View className="flex-1 pr-3">
             <Text className="text-white text-2xl font-bold" numberOfLines={1}>
               {song?.name ?? 'All Of Me'}
@@ -61,7 +68,7 @@ const PlayerScreen = ({ song }: Props) => {
         </View>
 
         {/* Progress */}
-        <View className="mt-6">
+        <View className="mt-8">
           <Slider
             value={progress}
             onValueChange={setProgress}
@@ -86,7 +93,7 @@ const PlayerScreen = ({ song }: Props) => {
         </View>
 
         {/* Controls */}
-        <View className="flex-row items-center justify-center mt-8">
+        <View className="flex-row items-center justify-center mt-10">
           <TouchableOpacity className="mx-8">
             <Ionicons name="play-back" size={38} color="#fff" />
           </TouchableOpacity>
@@ -101,28 +108,8 @@ const PlayerScreen = ({ song }: Props) => {
             <Ionicons name="play-forward" size={38} color="#fff" />
           </TouchableOpacity>
         </View>
-
-        {/* Volume */}
-        <View className="flex-row items-center mt-10">
-          <Ionicons name="volume-low" size={18} color="rgba(255,255,255,0.7)" />
-          <Slider
-            style={{ flex: 1, marginHorizontal: 8 }}
-            value={volume}
-            onValueChange={setVolume}
-            minimumValue={0}
-            maximumValue={1}
-            minimumTrackTintColor="#ffffff"
-            maximumTrackTintColor="rgba(255,255,255,0.25)"
-            thumbTintColor="#ffffff"
-          />
-          <Ionicons
-            name="volume-high"
-            size={18}
-            color="rgba(255,255,255,0.7)"
-          />
-        </View>
       </View>
-    </LinearGradient>
+    </View>
   );
 };
 

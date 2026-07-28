@@ -1,10 +1,13 @@
 import React from 'react';
-import { Image, Text, View, Pressable } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { Song } from '../types/song';
-import { usePlayerSheet } from '../context/PlayerSheetContext';
 
-type SongCardProps = { song: Song };
+import { Song } from '../types/song';
+import { usePlayerSheet } from '../context/PlayerModalProvider';
+
+type SongCardProps = {
+  song: Song;
+};
 
 export default function SongCard({ song }: SongCardProps) {
   const { openPlayer } = usePlayerSheet();
@@ -15,41 +18,57 @@ export default function SongCard({ song }: SongCardProps) {
     'bg-green-500',
     'bg-purple-500',
     'bg-pink-500',
-    'bg-amber-500',
+    'bg-orange-500',
+    'bg-cyan-500',
   ];
-  const bgColor = colors[(song.name?.charCodeAt(0) || 0) % colors.length];
+
+  const bgColor = colors[(song.name?.charCodeAt(0) ?? 0) % colors.length];
 
   return (
     <Pressable
       onPress={() => openPlayer(song)}
-      className="flex-row items-center bg-zinc-900 rounded-2xl p-3 mb-3 active:opacity-70"
+      className="flex-row items-center rounded-3xl bg-zinc-900 px-4 py-3 active:opacity-80"
     >
+      {/* Album Cover */}
+
       {song.artwork ? (
         <Image
           source={{ uri: song.artwork }}
-          className="h-14 w-14 rounded-lg"
+          className="h-16 w-16 rounded-2xl"
         />
       ) : (
         <View
-          className={`h-14 w-14 rounded-lg items-center justify-center ${bgColor}`}
+          className={`h-16 w-16 rounded-2xl items-center justify-center ${bgColor}`}
         >
-          <Ionicons name="musical-note" size={26} color="#ffffff" />
+          <Ionicons name="musical-notes" size={30} color="white" />
         </View>
       )}
-      <View className="flex-1 ml-3">
-        <Text className="text-base font-semibold text-white" numberOfLines={1}>
+
+      {/* Song Info */}
+
+      <View className="flex-1 ml-4">
+        <Text numberOfLines={1} className="text-white text-base font-bold">
           {song.name}
         </Text>
-        <View className="flex-row justify-between items-center mt-1">
-          <Text className="text-sm text-zinc-400" numberOfLines={1}>
-            {song.artist ?? 'Bilinmeyen Sanatçı'}
-          </Text>
-          <Text className="text-xs text-zinc-500">
-            {song.duration ?? '--:--'}
+
+        <Text numberOfLines={1} className="mt-1 text-sm text-zinc-400">
+          {song.artist || 'Bilinmeyen Sanatçı'}
+        </Text>
+
+        <View className="mt-2 flex-row items-center">
+          <Ionicons name="time-outline" size={13} color="#71717a" />
+
+          <Text className="ml-1 text-xs text-zinc-500">
+            {song.duration || '--:--'}
           </Text>
         </View>
       </View>
-      <Ionicons name="play-circle" size={32} color="#10b981" style={{ marginLeft: 8 }} />
+
+      {/* More */}
+
+      <View className="ml-3">
+        <Ionicons name="ellipsis-vertical" size={20} color="#9ca3af" />
+      </View>
     </Pressable>
   );
 }

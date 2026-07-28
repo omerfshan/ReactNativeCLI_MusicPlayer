@@ -2,7 +2,7 @@
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { PlayerSheetProvider } from './src/context/PlayerSheetContext';
+import { PlayerSheetProvider } from './src/context/PlayerModalProvider';
 import HomeScreen from './src/screens/HomeScreen';
 
 export default function App() {

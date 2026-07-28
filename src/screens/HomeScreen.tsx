@@ -1,36 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
   ActivityIndicator,
   Alert,
+  FlatList,
   Pressable,
+  Text,
+  View,
 } from 'react-native';
 
-import {
-  getMp3FilesFromMusicFolder,
-  getMusicFolderPath,
-} from '../services/fileSystemService';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
+
 import SongCard from '../components/SongCard';
 import { Song } from '../types/song';
+
+import { getMp3FilesFromMusicFolder } from '../services/fileSystemService';
 
 export default function HomeScreen() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const musicFolderPath = getMusicFolderPath();
-
   const loadSongs = async () => {
     try {
       setLoading(true);
-      const mp3Files = await getMp3FilesFromMusicFolder();
-      setSongs(mp3Files);
-    } catch (error) {
-      console.log('MP3 OKUMA HATASI:', error);
-      Alert.alert('Hata', String(error));
+
+      const files = await getMp3FilesFromMusicFolder();
+
+      setSongs(files);
+    } catch (e) {
+      console.log(e);
+      Alert.alert('Hata', String(e));
     } finally {
       setLoading(false);
     }
@@ -42,40 +42,81 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-black px-4">
-        <ActivityIndicator size="large" color="#10b981" />
-        <Text className="mt-3 text-base text-white">Yükleniyor...</Text>
-      </View>
+      <SafeAreaView className="flex-1 bg-black items-center justify-center">
+        <ActivityIndicator size="large" color="#22c55e" />
+
+        <Text className="text-zinc-400 mt-4">Müzikler taranıyor...</Text>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1 bg-black px-4 pt-12">
-      <View className="flex-row items-center justify-between mb-1">
-        <View className="flex-row items-center">
-          <Ionicons name="musical-notes" size={26} color="#10b981" />
-          <Text className="ml-2.5 text-2xl font-bold text-white">Music Player</Text>
-        </View>
-        <Pressable
-          className="flex-row items-center rounded-xl bg-emerald-500 px-3.5 py-2 active:opacity-80"
-          onPress={loadSongs}>
-          <Ionicons name="refresh-outline" size={16} color="#000000" />
-          <Text className="ml-1.5 text-sm font-semibold text-black">Yenile</Text>
-        </Pressable>
-      </View>
+    <SafeAreaView className="flex-1 bg-black">
+      <FlatList
+        data={songs}
+        keyExtractor={item => item.path}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: 40,
+        }}
+        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        ListHeaderComponent={
+          <>
+            <View className="px-6 pt-4 pb-8">
+              <View className="flex-row justify-between items-start">
+                <View>
+                  <View className="flex-row items-center">
+                    <View className="h-14 w-14 rounded-full bg-emerald-500 items-center justify-center">
+                      <Ionicons name="musical-notes" size={28} color="black" />
+                    </View>
 
-      <Text className="mb-4 text-xs text-zinc-400">{musicFolderPath}</Text>
+                    <View className="ml-4">
+                      <Text className="text-white text-3xl font-bold">
+                        Music Player
+                      </Text>
 
-      {songs.length === 0 ? (
-        <Text className="text-zinc-300">MP3 bulunamadi.</Text>
-      ) : (
-        <FlatList
-          data={songs}
-          keyExtractor={item => item.path}
-          contentContainerStyle={{ paddingBottom: 24 }}
-          renderItem={({ item }) => <SongCard song={item} />}
-        />
-      )}
-    </View>
+                      <Text className="text-zinc-400 mt-1">
+                        Telefonundaki müzikler
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <Pressable
+                  onPress={loadSongs}
+                  className="h-12 w-12 rounded-full bg-zinc-900 items-center justify-center active:opacity-70"
+                >
+                  <Ionicons name="refresh" size={22} color="#22c55e" />
+                </Pressable>
+              </View>
+
+              <View className="mt-7 rounded-3xl bg-zinc-900 p-5">
+                <Text className="text-zinc-400 text-sm">Toplam Şarkı</Text>
+
+                <Text className="text-white text-4xl font-bold mt-1">
+                  {songs.length}
+                </Text>
+              </View>
+
+              <Text className="text-white text-xl font-bold mt-8 mb-4">
+                Tüm Şarkılar
+              </Text>
+            </View>
+          </>
+        }
+        ListEmptyComponent={
+          <View className="items-center mt-20">
+            <Ionicons name="musical-note-outline" size={80} color="#555" />
+
+            <Text className="text-zinc-400 mt-5 text-lg">Şarkı bulunamadı</Text>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <View className="px-6">
+            <SongCard song={item} />
+          </View>
+        )}
+      />
+    </SafeAreaView>
   );
 }
