@@ -1,13 +1,14 @@
 import React from 'react';
-import { Image, Text, View } from 'react-native';
-
+import { Image, Text, View, Pressable } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Song } from '../types/song';
+import { usePlayerSheet } from '../context/PlayerSheetContext';
 
-type SongCardProps = {
-  song: Song;
-};
+type SongCardProps = { song: Song };
 
 export default function SongCard({ song }: SongCardProps) {
+  const { openPlayer } = usePlayerSheet();
+
   const colors = [
     'bg-red-500',
     'bg-blue-500',
@@ -19,8 +20,10 @@ export default function SongCard({ song }: SongCardProps) {
   const bgColor = colors[(song.name?.charCodeAt(0) || 0) % colors.length];
 
   return (
-    <View className="flex-row items-center bg-zinc-900 rounded-2xl p-3 mb-3">
-      {/* flex-row yatay hiza flex-col dikey hiza bg-zinc-900 arkaplan rengi rounded yuvarla  */}
+    <Pressable
+      onPress={() => openPlayer(song)}
+      className="flex-row items-center bg-zinc-900 rounded-2xl p-3 mb-3 active:opacity-70"
+    >
       {song.artwork ? (
         <Image
           source={{ uri: song.artwork }}
@@ -30,26 +33,23 @@ export default function SongCard({ song }: SongCardProps) {
         <View
           className={`h-14 w-14 rounded-lg items-center justify-center ${bgColor}`}
         >
-          <Text className="text-xl font-bold text-white">
-            {song.name?.charAt(0).toUpperCase()}
-          </Text>
+          <Ionicons name="musical-note" size={26} color="#ffffff" />
         </View>
       )}
       <View className="flex-1 ml-3">
         <Text className="text-base font-semibold text-white" numberOfLines={1}>
           {song.name}
         </Text>
-
         <View className="flex-row justify-between items-center mt-1">
           <Text className="text-sm text-zinc-400" numberOfLines={1}>
             {song.artist ?? 'Bilinmeyen Sanatçı'}
           </Text>
-
           <Text className="text-xs text-zinc-500">
             {song.duration ?? '--:--'}
           </Text>
         </View>
       </View>
-    </View>
+      <Ionicons name="play-circle" size={32} color="#10b981" style={{ marginLeft: 8 }} />
+    </Pressable>
   );
 }

@@ -13,6 +13,7 @@ import {
   getMusicFolderPath,
 } from '../services/fileSystemService';
 
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import SongCard from '../components/SongCard';
 import { Song } from '../types/song';
 
@@ -42,23 +43,28 @@ export default function HomeScreen() {
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-black px-4">
-        <ActivityIndicator />
-        <Text className="mt-3 text-base text-white">Yukleniyor...</Text>
+        <ActivityIndicator size="large" color="#10b981" />
+        <Text className="mt-3 text-base text-white">Yükleniyor...</Text>
       </View>
     );
   }
 
   return (
     <View className="flex-1 bg-black px-4 pt-12">
-      <Text className="mb-2 text-2xl font-semibold text-white">Music Player</Text>
+      <View className="flex-row items-center justify-between mb-1">
+        <View className="flex-row items-center">
+          <Ionicons name="musical-notes" size={26} color="#10b981" />
+          <Text className="ml-2.5 text-2xl font-bold text-white">Music Player</Text>
+        </View>
+        <Pressable
+          className="flex-row items-center rounded-xl bg-emerald-500 px-3.5 py-2 active:opacity-80"
+          onPress={loadSongs}>
+          <Ionicons name="refresh-outline" size={16} color="#000000" />
+          <Text className="ml-1.5 text-sm font-semibold text-black">Yenile</Text>
+        </Pressable>
+      </View>
 
       <Text className="mb-4 text-xs text-zinc-400">{musicFolderPath}</Text>
-
-      <Pressable
-        className="mb-4 items-center rounded-xl bg-emerald-500 px-4 py-3"
-        onPress={loadSongs}>
-        <Text className="text-sm font-semibold text-black">Yenile</Text>
-      </Pressable>
 
       {songs.length === 0 ? (
         <Text className="text-zinc-300">MP3 bulunamadi.</Text>
