@@ -1,7 +1,19 @@
 import * as RNFS from '@dr.pogodin/react-native-fs';
 import { getAudioMetadata } from '@missingcore/audio-metadata';
+import Sound from 'react-native-sound';
 import { MUSIC_FOLDER_PATH } from '../constants/paths';
 import { Song } from '../types/song';
+
+const formatDuration = (seconds?: number): string | undefined => {
+  if (seconds == null) {
+    return undefined;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
 
 export const createFolderIfNotExist = async (): Promise<void> => {
   const folderExists = await RNFS.exists(MUSIC_FOLDER_PATH);
@@ -9,6 +21,27 @@ export const createFolderIfNotExist = async (): Promise<void> => {
   if (!folderExists) {
     await RNFS.mkdir(MUSIC_FOLDER_PATH);
   }
+};
+
+const getAudioDuration = (filePath: string): Promise<number | undefined> => {
+  return new Promise(resolve => {
+    const sound = new Sound(filePath, '', error => {
+      if (error) {
+        resolve(undefined);
+        return;
+      }
+
+      const duration = sound.getDuration();
+      sound.release();
+
+      if (!Number.isFinite(duration) || duration <= 0) {
+        resolve(undefined);
+        return;
+      }
+
+      resolve(duration);
+    });
+  });
 };
 
 export const getMp3FilesFromMusicFolder = async (): Promise<Song[]> => {
@@ -31,11 +64,14 @@ export const getMp3FilesFromMusicFolder = async (): Promise<Song[]> => {
           'name',
         ] as const);
 
+        const durationSeconds = await getAudioDuration(file.path);
+
         return {
           name: metadata.name ?? file.name.replace(/\.mp3$/i, ''),
           path: file.path,
           artist: metadata.artist ?? 'Bilinmeyen Sanatçı',
           artwork: metadata.artwork ?? undefined,
+          duration: formatDuration(durationSeconds),
         };
       } catch (error) {
         console.error('Metadata Error:', error);
@@ -45,6 +81,7 @@ export const getMp3FilesFromMusicFolder = async (): Promise<Song[]> => {
           path: file.path,
           artist: 'Bilinmeyen Sanatçı',
           artwork: undefined,
+          duration: undefined,
         };
       }
     }),

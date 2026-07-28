@@ -2,12 +2,10 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  Button,
   FlatList,
   ActivityIndicator,
   Alert,
-  Image,
-  StyleSheet,
+  Pressable,
 } from 'react-native';
 
 import {
@@ -15,6 +13,7 @@ import {
   getMusicFolderPath,
 } from '../services/fileSystemService';
 
+import SongCard from '../components/SongCard';
 import { Song } from '../types/song';
 
 export default function HomeScreen() {
@@ -42,95 +41,35 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
+      <View className="flex-1 items-center justify-center bg-black px-4">
         <ActivityIndicator />
-        <Text>Yükleniyor...</Text>
+        <Text className="mt-3 text-base text-white">Yukleniyor...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Music Player</Text>
+    <View className="flex-1 bg-black px-4 pt-12">
+      <Text className="mb-2 text-2xl font-semibold text-white">Music Player</Text>
 
-      <Text style={styles.path}>{musicFolderPath}</Text>
+      <Text className="mb-4 text-xs text-zinc-400">{musicFolderPath}</Text>
 
-      <Button title="Yenile" onPress={loadSongs} />
+      <Pressable
+        className="mb-4 items-center rounded-xl bg-emerald-500 px-4 py-3"
+        onPress={loadSongs}>
+        <Text className="text-sm font-semibold text-black">Yenile</Text>
+      </Pressable>
 
       {songs.length === 0 ? (
-        <Text>MP3 bulunamadı.</Text>
+        <Text className="text-zinc-300">MP3 bulunamadi.</Text>
       ) : (
         <FlatList
           data={songs}
           keyExtractor={item => item.path}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              {item.artwork ? (
-                <Image source={{ uri: item.artwork }} style={styles.artwork} />
-              ) : (
-                <View style={[styles.artwork, styles.artworkPlaceholder]} />
-              )}
-              <View style={styles.meta}>
-                <Text style={styles.songName} numberOfLines={1}>
-                  {item.name}
-                </Text>
-                <Text style={styles.artist} numberOfLines={1}>
-                  {item.artist}
-                </Text>
-              </View>
-            </View>
-          )}
+          contentContainerStyle={{ paddingBottom: 24 }}
+          renderItem={({ item }) => <SongCard song={item} />}
         />
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    paddingTop: 48,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  path: {
-    fontSize: 12,
-    opacity: 0.6,
-    marginBottom: 12,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    gap: 12,
-  },
-  artwork: {
-    width: 56,
-    height: 56,
-    borderRadius: 6,
-  },
-  artworkPlaceholder: {
-    backgroundColor: '#ddd',
-  },
-  meta: {
-    flex: 1,
-  },
-  songName: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  artist: {
-    fontSize: 13,
-    opacity: 0.7,
-    marginTop: 2,
-  },
-});
