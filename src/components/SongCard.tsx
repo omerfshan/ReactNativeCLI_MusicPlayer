@@ -1,16 +1,15 @@
 import React from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
+import { usePlayerContext } from '../context/PlayerModalProvider';
 import { Song } from '../types/song';
-import { usePlayerSheet } from '../context/PlayerModalProvider';
 
 type SongCardProps = {
   song: Song;
 };
 
 export default function SongCard({ song }: SongCardProps) {
-  const { openPlayer } = usePlayerSheet();
+  const { OpenPlayer } = usePlayerContext();
 
   const colors = [
     'bg-red-500',
@@ -26,7 +25,7 @@ export default function SongCard({ song }: SongCardProps) {
 
   return (
     <Pressable
-      onPress={() => openPlayer(song)}
+      onPress={() => OpenPlayer(song)}
       className="flex-row items-center rounded-3xl bg-zinc-900 px-4 py-3 active:opacity-80"
     >
       {/* Album Cover */}

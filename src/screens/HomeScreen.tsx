@@ -18,16 +18,6 @@ import { Song } from '../types/song';
 import { getMp3FilesFromMusicFolder } from '../services/fileSystemService';
 
 export default function HomeScreen() {
-  const testdata: Song[] = [
-    {
-      name: 'Blinding Lights',
-      artist: 'The Weeknd',
-      duration: '03:20',
-      artwork: '',
-      path: '',
-    },
-  ];
-
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,7 +31,6 @@ export default function HomeScreen() {
     } catch (e) {
       console.log(e);
       Alert.alert('Hata', String(e));
-      setSongs(testdata);
     } finally {
       setLoading(false);
     }

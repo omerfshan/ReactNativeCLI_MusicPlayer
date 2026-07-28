@@ -48,6 +48,13 @@ export const getMp3FilesFromMusicFolder = async (): Promise<Song[]> => {
   await createFolderIfNotExist();
 
   const files = await RNFS.readDir(MUSIC_FOLDER_PATH);
+  const data: Song = {
+    name: 'Blinding Lights',
+    artist: 'The Weeknd',
+    duration: '03:20',
+    artwork: '',
+    path: '',
+  };
 
   const mp3Files = files
     .filter(file => file.isFile())
@@ -86,7 +93,7 @@ export const getMp3FilesFromMusicFolder = async (): Promise<Song[]> => {
       }
     }),
   );
-
+  songs.push(data);
   return songs;
 };
 

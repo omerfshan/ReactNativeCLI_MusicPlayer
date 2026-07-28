@@ -1,21 +1,22 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Modal } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import PlayerScreen from '../screens/PlayerScreen';
 import { Song } from '../types/song';
 
-type ContextType = {
-  openPlayer: (song: Song) => void;
-  closePlayer: () => void;
+type PlayerScreenType = {
+  OpenPlayer: (song: Song) => void;
+  ClosePlayer: () => void;
 };
 
-const PlayerContext = createContext<ContextType>({
-  openPlayer: () => {},
-  closePlayer: () => {},
+const PlayerContext = createContext<PlayerScreenType>({
+  OpenPlayer: (song: Song) => {},
+  ClosePlayer: () => {},
 });
 
-export const usePlayerSheet = () => useContext(PlayerContext);
+export const usePlayerContext = () => useContext(PlayerContext);
 
-export const PlayerSheetProvider = ({
+export const PlayerModalProvider = ({
   children,
 }: {
   children: React.ReactNode;
@@ -23,20 +24,20 @@ export const PlayerSheetProvider = ({
   const [visible, setVisible] = useState(false);
   const [song, setSong] = useState<Song | null>(null);
 
-  const openPlayer = useCallback((s: Song) => {
+  const OpenPlayer = useCallback((s: Song) => {
     setSong(s);
     setVisible(true);
   }, []);
 
-  const closePlayer = useCallback(() => {
+  const ClosePlayer = useCallback(() => {
     setVisible(false);
   }, []);
 
   return (
     <PlayerContext.Provider
       value={{
-        openPlayer,
-        closePlayer,
+        OpenPlayer,
+        ClosePlayer,
       }}
     >
       {children}
@@ -46,9 +47,11 @@ export const PlayerSheetProvider = ({
         animationType="slide"
         presentationStyle="fullScreen"
         statusBarTranslucent
-        onRequestClose={closePlayer}
+        onRequestClose={ClosePlayer}
       >
-        <PlayerScreen song={song} />
+        <SafeAreaProvider>
+          <PlayerScreen song={song} />
+        </SafeAreaProvider>
       </Modal>
     </PlayerContext.Provider>
   );
