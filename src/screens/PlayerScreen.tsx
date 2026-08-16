@@ -1,45 +1,38 @@
-// screens/PlayerScreen.tsx
-
+import Slider from '@react-native-community/slider';
 import React, { useState } from 'react';
 import {
-  Text,
   Image,
+  Platform,
+  StatusBar,
+  Text,
   TouchableOpacity,
   useWindowDimensions,
   View,
-  Platform,
-  StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Slider from '@react-native-community/slider';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
-import { Song } from '../types/song';
 import { usePlayerContext } from '../context/PlayerModalProvider';
+import { formatTimeSeconds } from '../utils/timeFormatter';
 
-type Props = {
-  song?: Song | null;
-};
-
-export default function PlayerScreen({ song }: Props) {
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [progress, setProgress] = useState(0.6);
+export default function PlayerScreen() {
+  const { currentSong, playbackStatus, ClosePlayer, togglePlayPause, seekTo } =
+    usePlayerContext();
   const [liked, setLiked] = useState(false);
-
-  const { ClosePlayer } = usePlayerContext();
 
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
-  // Dynamically calculate album cover size based on width AND available screen height
   const artSize = Math.min(width * 0.78, height * 0.35, 340);
 
-  // Calculate safe top and bottom padding to avoid notch / status bar / gesture bar overlap
   const topPadding = Math.max(
     insets.top,
     Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 44,
   );
   const bottomPadding = Math.max(insets.bottom, 16);
+
+  const currentSeconds = playbackStatus.currentPositionSeconds || 0;
+  const durationSeconds = playbackStatus.durationSeconds || 1;
+  const remainingSeconds = Math.max(0, durationSeconds - currentSeconds);
 
   return (
     <View className="flex-1 bg-black">
@@ -73,12 +66,12 @@ export default function PlayerScreen({ song }: Props) {
         className="flex-1 justify-between px-6"
         style={{ paddingBottom: bottomPadding }}
       >
-        {/* ALBUM */}
+        {/* ALBUM ARTWORK */}
         <View className="items-center justify-center flex-1 py-2">
           <Image
             source={{
               uri:
-                song?.artwork ||
+                currentSong?.artwork ||
                 'https://images.genius.com/dbf5a4c4045b74b075a0f61a38ae7da2.1000x1000x1.png',
             }}
             resizeMode="cover"
@@ -92,15 +85,15 @@ export default function PlayerScreen({ song }: Props) {
 
         {/* BOTTOM SECTION */}
         <View className="w-full">
-          {/* ŞARKI BİLGİSİ */}
+          {/* SONG INFO */}
           <View className="flex-row items-center justify-between">
             <View className="flex-1 mr-4">
               <Text className="text-white text-2xl font-bold" numberOfLines={1}>
-                {song?.name ?? 'Blinding Lights'}
+                {currentSong?.name ?? 'Şarkı Seçilmedi'}
               </Text>
 
               <Text className="text-white/60 text-lg mt-1" numberOfLines={1}>
-                {song?.artist ?? 'The Weeknd'}
+                {currentSong?.artist ?? 'Bilinmeyen Sanatçı'}
               </Text>
             </View>
 
@@ -122,20 +115,22 @@ export default function PlayerScreen({ song }: Props) {
             </View>
           </View>
 
-          {/* SLIDER */}
+          {/* SLIDER & TIMERS */}
           <View className="mt-6">
             <Slider
-              value={progress}
-              onValueChange={setProgress}
+              value={currentSeconds}
               minimumValue={0}
-              maximumValue={1}
+              maximumValue={durationSeconds}
+              onSlidingComplete={value => seekTo(value)}
               minimumTrackTintColor="#fff"
               maximumTrackTintColor="rgba(255,255,255,0.25)"
               thumbTintColor="#fff"
             />
 
             <View className="flex-row justify-between items-center mt-1">
-              <Text className="text-white/60 text-xs">1:41</Text>
+              <Text className="text-white/60 text-xs">
+                {formatTimeSeconds(currentSeconds)}
+              </Text>
 
               <View className="flex-row items-center">
                 <Ionicons
@@ -146,25 +141,35 @@ export default function PlayerScreen({ song }: Props) {
                 <Text className="text-white/60 text-xs ml-1">Dolby Atmos</Text>
               </View>
 
-              <Text className="text-white/60 text-xs">-1:04</Text>
+              <Text className="text-white/60 text-xs">
+                -{formatTimeSeconds(remainingSeconds)}
+              </Text>
             </View>
           </View>
 
-          {/* KONTROLLER */}
+          {/* CONTROLS */}
           <View className="flex-row justify-center items-center my-6">
-            <TouchableOpacity className="mx-8">
+            <TouchableOpacity
+              className="mx-8"
+              onPress={() => seekTo(Math.max(0, currentSeconds - 10))}
+            >
               <Ionicons name="play-back" size={40} color="#fff" />
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => setIsPlaying(!isPlaying)}>
+            <TouchableOpacity onPress={togglePlayPause}>
               <Ionicons
-                name={isPlaying ? 'pause' : 'play'}
+                name={playbackStatus.isPlaying ? 'pause' : 'play'}
                 size={68}
                 color="#fff"
               />
             </TouchableOpacity>
 
-            <TouchableOpacity className="mx-8">
+            <TouchableOpacity
+              className="mx-8"
+              onPress={() =>
+                seekTo(Math.min(durationSeconds, currentSeconds + 10))
+              }
+            >
               <Ionicons name="play-forward" size={40} color="#fff" />
             </TouchableOpacity>
           </View>
