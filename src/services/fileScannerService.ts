@@ -59,6 +59,7 @@ export class FileScannerService implements IMusicScanner {
               artist: metadata.artist ?? 'Bilinmeyen Sanatçı',
               artwork: metadata.artwork,
               duration: formatDuration(durationSeconds),
+              durationSeconds: durationSeconds,
             };
           } catch (error) {
             console.error(`[FileScannerService] Error parsing ${file.name}:`, error);
@@ -69,6 +70,7 @@ export class FileScannerService implements IMusicScanner {
               artist: 'Bilinmeyen Sanatçı',
               artwork: undefined,
               duration: undefined,
+              durationSeconds: undefined,
             };
           }
         }),

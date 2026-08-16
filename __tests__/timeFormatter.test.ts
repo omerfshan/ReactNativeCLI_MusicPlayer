@@ -1,4 +1,4 @@
-import { formatDuration, formatTimeSeconds } from '../src/utils/timeFormatter';
+import { formatDuration, formatTimeSeconds, parseDurationToSeconds } from '../src/utils/timeFormatter';
 
 describe('timeFormatter utils', () => {
   describe('formatDuration', () => {
@@ -22,6 +22,19 @@ describe('timeFormatter utils', () => {
     it('formats seconds correctly', () => {
       expect(formatTimeSeconds(125)).toBe('2:05');
       expect(formatTimeSeconds(45)).toBe('0:45');
+    });
+  });
+
+  describe('parseDurationToSeconds', () => {
+    it('parses MM:SS string correctly', () => {
+      expect(parseDurationToSeconds('3:20')).toBe(200);
+      expect(parseDurationToSeconds('1:05')).toBe(65);
+      expect(parseDurationToSeconds('0:45')).toBe(45);
+    });
+
+    it('returns 0 for invalid or empty inputs', () => {
+      expect(parseDurationToSeconds(undefined)).toBe(0);
+      expect(parseDurationToSeconds('')).toBe(0);
     });
   });
 });

@@ -5,6 +5,7 @@ import TrackPlayer, {
 } from 'react-native-track-player';
 import { IAudioPlayer, PlaybackStatus } from '../interfaces/IAudioPlayer';
 import { Song } from '../types/song';
+import { parseDurationToSeconds } from '../utils/timeFormatter';
 
 /**
  * Single Responsibility: Audio player implementation using react-native-track-player.
@@ -19,6 +20,8 @@ export class TrackPlayerAudioService implements IAudioPlayer {
   private remoteNextListeners: Set<() => void> = new Set();
   private remotePrevListeners: Set<() => void> = new Set();
   private progressTimer: ReturnType<typeof setInterval> | null = null;
+  private isSeeking = false;
+  private seekTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.initPlayer();
@@ -91,7 +94,9 @@ export class TrackPlayerAudioService implements IAudioPlayer {
   private startProgressTracker(): void {
     this.stopProgressTracker();
     this.progressTimer = setInterval(async () => {
-      await this.notifyStatus();
+      if (!this.isSeeking) {
+        await this.notifyStatus();
+      }
     }, 500);
   }
 
@@ -102,16 +107,25 @@ export class TrackPlayerAudioService implements IAudioPlayer {
     }
   }
 
-  private async notifyStatus(): Promise<void> {
+  private async notifyStatus(overridePosition?: number): Promise<void> {
     try {
       const state = await TrackPlayer.getPlaybackState();
       const progress = await TrackPlayer.getProgress();
 
       const isPlaying = state.state === State.Playing || state.state === State.Buffering;
+      const fallbackDuration =
+        this.currentSong?.durationSeconds ||
+        parseDurationToSeconds(this.currentSong?.duration) ||
+        0;
+      const effectiveDuration =
+        progress.duration && progress.duration > 0
+          ? progress.duration
+          : fallbackDuration;
+
       const status: PlaybackStatus = {
         isPlaying,
-        currentPositionSeconds: progress.position || 0,
-        durationSeconds: progress.duration || 0,
+        currentPositionSeconds: overridePosition !== undefined ? overridePosition : (progress.position || 0),
+        durationSeconds: effectiveDuration,
       };
 
       this.listeners.forEach(listener => listener(status));
@@ -146,12 +160,16 @@ export class TrackPlayerAudioService implements IAudioPlayer {
       ? song.path
       : `file://${song.path}`;
 
+    const duration =
+      song.durationSeconds || parseDurationToSeconds(song.duration) || undefined;
+
     await TrackPlayer.add({
       id: song.path,
       url: trackUrl,
       title: song.name || 'Bilinmeyen Şarkı',
       artist: song.artist || 'Bilinmeyen Sanatçı',
       artwork: song.artwork || undefined,
+      duration: duration,
     });
 
     await this.notifyStatus();
@@ -171,8 +189,22 @@ export class TrackPlayerAudioService implements IAudioPlayer {
   }
 
   async seekTo(seconds: number): Promise<void> {
-    await TrackPlayer.seekTo(seconds);
-    await this.notifyStatus();
+    this.isSeeking = true;
+    if (this.seekTimer) {
+      clearTimeout(this.seekTimer);
+    }
+
+    try {
+      await TrackPlayer.seekTo(seconds);
+    } catch (e) {
+      console.warn('[TrackPlayerAudioService] Seek error:', e);
+    }
+
+    await this.notifyStatus(seconds);
+
+    this.seekTimer = setTimeout(() => {
+      this.isSeeking = false;
+    }, 1000);
   }
 
   async stop(): Promise<void> {

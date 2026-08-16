@@ -3,5 +3,6 @@ export type Song = {
   name: string;
   artist?: string;
   duration?: string;
+  durationSeconds?: number;
   artwork?: string;
 };

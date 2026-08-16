@@ -67,6 +67,7 @@ describe('FileScannerService', () => {
       path: '/dummy/music/path/test-song.mp3',
       artwork: 'file://artwork.jpg',
       duration: '3:00',
+      durationSeconds: 180,
     });
   });
 });

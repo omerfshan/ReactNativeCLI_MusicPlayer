@@ -1,4 +1,3 @@
-import Slider from '@react-native-community/slider';
 import React, { useState } from 'react';
 import {
   Image,
@@ -11,8 +10,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import YtProgressBar from '../components/YtProgressBar';
 import { usePlayerContext } from '../context/PlayerModalProvider';
-import { formatTimeSeconds } from '../utils/timeFormatter';
+import { formatTimeSeconds, parseDurationToSeconds } from '../utils/timeFormatter';
 
 export default function PlayerScreen() {
   const {
@@ -43,8 +43,17 @@ export default function PlayerScreen() {
   );
   const bottomPadding = Math.max(insets.bottom, 16);
 
+  const fallbackDuration =
+    currentSong?.durationSeconds ||
+    parseDurationToSeconds(currentSong?.duration) ||
+    playbackStatus.durationSeconds ||
+    1;
+  const durationSeconds =
+    playbackStatus.durationSeconds && playbackStatus.durationSeconds > 0
+      ? playbackStatus.durationSeconds
+      : fallbackDuration;
+
   const currentSeconds = playbackStatus.currentPositionSeconds || 0;
-  const durationSeconds = playbackStatus.durationSeconds || 1;
   const remainingSeconds = Math.max(0, durationSeconds - currentSeconds);
 
   const getModeIconAndLabel = () => {
@@ -146,19 +155,15 @@ export default function PlayerScreen() {
             </View>
           </View>
 
-          {/* SLIDER & TIMERS */}
-          <View className="mt-6">
-            <Slider
-              value={currentSeconds}
-              minimumValue={0}
-              maximumValue={durationSeconds}
-              onSlidingComplete={value => seekTo(value)}
-              minimumTrackTintColor="#fff"
-              maximumTrackTintColor="rgba(255,255,255,0.25)"
-              thumbTintColor="#fff"
+          {/* YOUTUBE MUSIC CUSTOM PROGRESS BAR & TIMERS */}
+          <View className="mt-4">
+            <YtProgressBar
+              currentSeconds={currentSeconds}
+              durationSeconds={durationSeconds}
+              onSeek={seconds => seekTo(seconds)}
             />
 
-            <View className="flex-row justify-between items-center mt-1">
+            <View className="flex-row justify-between items-center -mt-1">
               <Text className="text-white/60 text-xs">
                 {formatTimeSeconds(currentSeconds)}
               </Text>
@@ -220,9 +225,9 @@ export default function PlayerScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* EXTRA CONTROLS: PLAYBACK MODE (Sırayla / Karıştır / Tekrar) & QUEUE BUTTON */}
+          {/* EXTRA CONTROLS: PLAYBACK MODE & QUEUE BUTTON */}
           <View className="flex-row justify-between items-center bg-zinc-900/90 rounded-2xl p-3 mb-2 border border-zinc-800">
-            {/* Mode Button (Sequential -> Shuffle -> Repeat) */}
+            {/* Mode Button */}
             <TouchableOpacity
               onPress={togglePlaybackMode}
               className="flex-row items-center px-3 py-2 rounded-xl bg-zinc-800"
