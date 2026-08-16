@@ -14,4 +14,5 @@ export interface IAudioPlayer {
   stop(): void;
   release(): void;
   onStatusChange(listener: (status: PlaybackStatus) => void): () => void;
+  onTrackEnded(listener: () => void): () => void;
 }

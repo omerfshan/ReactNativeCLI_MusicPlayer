@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -9,15 +9,24 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MiniPlayer from '../components/MiniPlayer';
 import SongCard from '../components/SongCard';
+import { usePlayerContext } from '../context/PlayerModalProvider';
 import { useSongs } from '../hooks/useSongs';
 
 /**
- * Single Responsibility: Present song list UI, headers, and loading/empty states.
- * Delegates song state management to useSongs hook (SRP/DIP).
+ * Single Responsibility: Present song list UI, headers, loading/empty states,
+ * and persistent MiniPlayer (SRP/DIP).
  */
 export default function HomeScreen() {
   const { songs, loading, error, refresh } = useSongs();
+  const { setQueue } = usePlayerContext();
+
+  useEffect(() => {
+    if (songs && songs.length > 0) {
+      setQueue(songs);
+    }
+  }, [setQueue, songs]);
 
   if (error) {
     Alert.alert('Hata', error);
@@ -33,13 +42,13 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
+    <SafeAreaView className="flex-1 bg-black relative">
       <FlatList
         data={songs}
         keyExtractor={item => item.path}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingBottom: 40,
+          paddingBottom: 90,
         }}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         ListHeaderComponent={
@@ -94,6 +103,9 @@ export default function HomeScreen() {
           </View>
         )}
       />
+
+      {/* Floating Mini Player at Bottom */}
+      <MiniPlayer />
     </SafeAreaView>
   );
 }

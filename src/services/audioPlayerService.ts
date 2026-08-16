@@ -14,6 +14,7 @@ export class AudioPlayerService implements IAudioPlayer {
   private duration: number = 0;
   private timer: ReturnType<typeof setInterval> | null = null;
   private listeners: Set<(status: PlaybackStatus) => void> = new Set();
+  private endListeners: Set<() => void> = new Set();
 
   constructor() {
     Sound.setCategory('Playback');
@@ -26,6 +27,10 @@ export class AudioPlayerService implements IAudioPlayer {
       durationSeconds: this.duration,
     };
     this.listeners.forEach(listener => listener(status));
+  }
+
+  private notifyEnded(): void {
+    this.endListeners.forEach(listener => listener());
   }
 
   private startProgressTracker(): void {
@@ -96,6 +101,7 @@ export class AudioPlayerService implements IAudioPlayer {
         this.currentPosition = 0;
         this.stopProgressTracker();
         this.notifyStatus();
+        this.notifyEnded();
       } else {
         console.warn('[AudioPlayerService] Playback stopped or failed');
         this.isPlaying = false;
@@ -155,6 +161,13 @@ export class AudioPlayerService implements IAudioPlayer {
 
     return () => {
       this.listeners.delete(listener);
+    };
+  }
+
+  onTrackEnded(listener: () => void): () => void {
+    this.endListeners.add(listener);
+    return () => {
+      this.endListeners.delete(listener);
     };
   }
 }
