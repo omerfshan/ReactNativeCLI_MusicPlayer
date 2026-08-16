@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useLocalization } from '../context/LocalizationContext';
 import { usePlayerContext } from '../context/PlayerContext';
 import { useTheme } from '../context/ThemeContext';
 import EqualizerAnimation from './EqualizerAnimation';
@@ -17,6 +18,7 @@ export default function MiniPlayer() {
   } = usePlayerContext();
 
   const { isDarkMode, colors } = useTheme();
+  const { t } = useLocalization();
 
   if (!isMiniPlayerVisible || !currentSong || isModalOpen) {
     return null;
@@ -83,7 +85,7 @@ export default function MiniPlayer() {
           className="text-xs mt-0.5 font-medium"
           style={{ color: colors.textSecondary }}
         >
-          {currentSong.artist || 'Bilinmeyen Sanatçı'}
+          {currentSong.artist || t.unknownArtist}
         </Text>
       </View>
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useLocalization } from '../context/LocalizationContext';
 import { usePlayerContext } from '../context/PlayerContext';
 import { useTheme } from '../context/ThemeContext';
 import { Song } from '../types/song';
@@ -12,6 +13,7 @@ type SongCardProps = {
 export default function SongCard({ song }: SongCardProps) {
   const { OpenPlayer } = usePlayerContext();
   const { isDarkMode, colors } = useTheme();
+  const { t } = useLocalization();
 
   const placeholderColors = [
     'bg-red-500',
@@ -69,7 +71,7 @@ export default function SongCard({ song }: SongCardProps) {
           className="mt-1 text-sm font-medium"
           style={{ color: colors.textSecondary }}
         >
-          {song.artist || 'Bilinmeyen Sanatçı'}
+          {song.artist || t.unknownArtist}
         </Text>
 
         <View className="mt-2 flex-row items-center">

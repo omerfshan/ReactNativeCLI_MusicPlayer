@@ -12,18 +12,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MiniPlayer from '../components/MiniPlayer';
 import SongCard from '../components/SongCard';
+import { useLocalization } from '../context/LocalizationContext';
 import { usePlayerContext } from '../context/PlayerContext';
 import { useTheme } from '../context/ThemeContext';
 import { useSongs } from '../hooks/useSongs';
 
 /**
  * Single Responsibility: Present song list UI, header with refresh action,
- * and floating MiniPlayer. Automatically follows device Dark / Light mode.
+ * and floating MiniPlayer. Automatically follows device Dark / Light mode and language.
  */
 export default function HomeScreen() {
   const { songs, loading, error, refresh } = useSongs();
   const { setQueue } = usePlayerContext();
   const { isDarkMode, colors } = useTheme();
+  const { t } = useLocalization();
 
   useEffect(() => {
     if (songs && songs.length > 0) {
@@ -32,7 +34,7 @@ export default function HomeScreen() {
   }, [setQueue, songs]);
 
   if (error) {
-    Alert.alert('Hata', error);
+    Alert.alert(t.error, error);
   }
 
   if (loading) {
@@ -47,7 +49,7 @@ export default function HomeScreen() {
         />
         <ActivityIndicator size="large" color={colors.accent} />
         <Text className="mt-4 font-medium" style={{ color: colors.textSecondary }}>
-          Müzikler taranıyor...
+          {t.scanningMusic}
         </Text>
       </SafeAreaView>
     );
@@ -86,13 +88,13 @@ export default function HomeScreen() {
                     className="text-3xl font-bold"
                     style={{ color: colors.textPrimary }}
                   >
-                    Music Player
+                    {t.appTitle}
                   </Text>
                   <Text
                     className="mt-1 font-medium"
                     style={{ color: colors.textSecondary }}
                   >
-                    Telefonundaki müzikler
+                    {t.phoneMusicSubtitle}
                   </Text>
                 </View>
               </View>
@@ -128,7 +130,7 @@ export default function HomeScreen() {
               }}
             >
               <Text className="text-sm font-medium" style={{ color: colors.textSecondary }}>
-                Toplam Şarkı
+                {t.totalSongs}
               </Text>
               <Text
                 className="text-4xl font-bold mt-1"
@@ -142,7 +144,7 @@ export default function HomeScreen() {
               className="text-xl font-bold mt-8 mb-4"
               style={{ color: colors.textPrimary }}
             >
-              Tüm Şarkılar
+              {t.allSongs}
             </Text>
           </View>
         }
@@ -157,7 +159,7 @@ export default function HomeScreen() {
               className="mt-5 text-lg font-medium"
               style={{ color: colors.textSecondary }}
             >
-              Şarkı bulunamadı
+              {t.noSongsFound}
             </Text>
           </View>
         }

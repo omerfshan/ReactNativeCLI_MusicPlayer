@@ -2,6 +2,7 @@ import React from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useLocalization } from '../context/LocalizationContext';
 import { usePlayerContext } from '../context/PlayerContext';
 import { useTheme } from '../context/ThemeContext';
 import SongCard from './SongCard';
@@ -10,6 +11,7 @@ export default function QueueModal() {
   const { isQueueOpen, setIsQueueOpen, songsQueue, currentSong } =
     usePlayerContext();
   const { isDarkMode, colors } = useTheme();
+  const { t } = useLocalization();
 
   if (!isQueueOpen) {
     return null;
@@ -49,7 +51,7 @@ export default function QueueModal() {
               className="text-xl font-bold ml-2"
               style={{ color: colors.textPrimary }}
             >
-              Sıradaki Müzikler
+              {t.queueTitle}
             </Text>
           </View>
 
@@ -98,7 +100,7 @@ export default function QueueModal() {
                 className="text-base font-medium"
                 style={{ color: colors.textSecondary }}
               >
-                Sırada başka şarkı yok
+                {t.noMoreSongs}
               </Text>
             </View>
           }

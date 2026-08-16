@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useProgress } from 'react-native-track-player';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import YtProgressBar from '../components/YtProgressBar';
+import { useLocalization } from '../context/LocalizationContext';
 import { usePlayerContext } from '../context/PlayerContext';
 import { useTheme } from '../context/ThemeContext';
 import { formatTimeSeconds, parseDurationToSeconds } from '../utils/timeFormatter';
@@ -33,6 +34,7 @@ export default function PlayerScreen() {
   } = usePlayerContext();
 
   const { isDarkMode, colors } = useTheme();
+  const { t } = useLocalization();
   const [liked, setLiked] = useState(false);
   const [scrubbingSeconds, setScrubbingSeconds] = useState<number | null>(null);
 
@@ -81,12 +83,12 @@ export default function PlayerScreen() {
   const getModeIconAndLabel = () => {
     switch (playbackMode) {
       case 'shuffle':
-        return { icon: 'shuffle', label: 'Karıştır', color: '#22c55e' };
+        return { icon: 'shuffle', label: t.modeShuffle, color: '#22c55e' };
       case 'repeat':
-        return { icon: 'repeat', label: 'Tekrar Çal', color: '#3b82f6' };
+        return { icon: 'repeat', label: t.modeRepeat, color: '#3b82f6' };
       case 'sequential':
       default:
-        return { icon: 'reorder-two', label: 'Sırayla Çal', color: colors.textSecondary };
+        return { icon: 'reorder-two', label: t.modeSequential, color: colors.textSecondary };
     }
   };
 
@@ -113,7 +115,7 @@ export default function PlayerScreen() {
           className="text-base font-semibold"
           style={{ color: colors.textPrimary }}
         >
-          Şimdi Çalıyor
+          {t.nowPlaying}
         </Text>
 
         <TouchableOpacity
@@ -157,7 +159,7 @@ export default function PlayerScreen() {
                 numberOfLines={1}
                 style={{ color: colors.textPrimary }}
               >
-                {currentSong?.name ?? 'Şarkı Seçilmedi'}
+                {currentSong?.name ?? t.noSongSelected}
               </Text>
 
               <Text
@@ -165,7 +167,7 @@ export default function PlayerScreen() {
                 numberOfLines={1}
                 style={{ color: colors.textSecondary }}
               >
-                {currentSong?.artist ?? 'Bilinmeyen Sanatçı'}
+                {currentSong?.artist ?? t.unknownArtist}
               </Text>
             </View>
 
@@ -353,7 +355,7 @@ export default function PlayerScreen() {
                 className="font-semibold text-xs ml-2"
                 style={{ color: colors.textPrimary }}
               >
-                Sıradaki Müzikler
+                {t.queueButton}
               </Text>
             </TouchableOpacity>
           </View>
