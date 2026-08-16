@@ -49,8 +49,8 @@ export const getMp3FilesFromMusicFolder = async (): Promise<Song[]> => {
 
   const files = await RNFS.readDir(MUSIC_FOLDER_PATH);
   const data: Song = {
-    name: 'Blinding Lights',
-    artist: 'The Weeknd',
+    name: 'Kafamız Matiz',
+    artist: 'Ceg',
     duration: '03:20',
     artwork: '',
     path: '',

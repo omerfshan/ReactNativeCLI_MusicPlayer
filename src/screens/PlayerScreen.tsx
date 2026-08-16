@@ -77,7 +77,9 @@ export default function PlayerScreen({ song }: Props) {
         <View className="items-center justify-center flex-1 py-2">
           <Image
             source={{
-              uri: song?.artwork || 'https://picsum.photos/500',
+              uri:
+                song?.artwork ||
+                'https://images.genius.com/dbf5a4c4045b74b075a0f61a38ae7da2.1000x1000x1.png',
             }}
             resizeMode="cover"
             style={{
