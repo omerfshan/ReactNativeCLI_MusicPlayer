@@ -251,17 +251,19 @@ export default function PlayerScreen() {
 
           {/* CONTROLS (-10s, Prev <<, Play/Pause, Next >>, +10s) */}
           <View className="flex-row justify-between items-center my-5 px-2">
-            {/* -10 sec */}
+            {/* -10 sec (Flipped to point backwards/counter-clockwise) */}
             <TouchableOpacity
               onPress={seekBackward10}
               className="items-center justify-center p-2"
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons
-                name="refresh-circle-outline"
-                size={32}
-                color={colors.textSecondary}
-              />
+              <View style={{ transform: [{ scaleX: -1 }] }}>
+                <Ionicons
+                  name="refresh-circle-outline"
+                  size={32}
+                  color={colors.textSecondary}
+                />
+              </View>
               <Text
                 className="text-[10px] font-bold mt-0.5"
                 style={{ color: colors.textSecondary }}

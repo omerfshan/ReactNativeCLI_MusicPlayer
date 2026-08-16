@@ -14,8 +14,8 @@ interface LocalizationContextType {
 }
 
 const defaultContextValue: LocalizationContextType = {
-  language: 'en',
-  t: localizationService.getStrings('en'),
+  language: 'tr',
+  t: localizationService.getStrings('tr'),
 };
 
 const LocalizationContext =
