@@ -113,18 +113,21 @@ export class TrackPlayerAudioService implements IAudioPlayer {
       const progress = await TrackPlayer.getProgress();
 
       const isPlaying = state.state === State.Playing || state.state === State.Buffering;
-      const fallbackDuration =
+
+      const songDuration =
         this.currentSong?.durationSeconds ||
         parseDurationToSeconds(this.currentSong?.duration) ||
         0;
+
       const effectiveDuration =
         progress.duration && progress.duration > 0
           ? progress.duration
-          : fallbackDuration;
+          : songDuration;
 
       const status: PlaybackStatus = {
         isPlaying,
-        currentPositionSeconds: overridePosition !== undefined ? overridePosition : (progress.position || 0),
+        currentPositionSeconds:
+          overridePosition !== undefined ? overridePosition : (progress.position || 0),
         durationSeconds: effectiveDuration,
       };
 
@@ -148,10 +151,6 @@ export class TrackPlayerAudioService implements IAudioPlayer {
 
   async loadSong(song: Song): Promise<void> {
     await this.initPlayer();
-
-    if (this.currentSong?.path === song.path) {
-      return;
-    }
 
     this.currentSong = song;
     await TrackPlayer.reset();
@@ -194,17 +193,23 @@ export class TrackPlayerAudioService implements IAudioPlayer {
       clearTimeout(this.seekTimer);
     }
 
+    const songDuration =
+      this.currentSong?.durationSeconds ||
+      parseDurationToSeconds(this.currentSong?.duration) ||
+      999999;
+    const safeSeconds = Math.max(0, Math.min(songDuration, Math.round(seconds)));
+
     try {
-      await TrackPlayer.seekTo(seconds);
+      await TrackPlayer.seekTo(safeSeconds);
     } catch (e) {
       console.warn('[TrackPlayerAudioService] Seek error:', e);
     }
 
-    await this.notifyStatus(seconds);
+    await this.notifyStatus(safeSeconds);
 
     this.seekTimer = setTimeout(() => {
       this.isSeeking = false;
-    }, 1000);
+    }, 600);
   }
 
   async stop(): Promise<void> {

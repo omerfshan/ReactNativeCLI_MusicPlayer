@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Image,
   Platform,
@@ -9,9 +9,11 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useProgress } from 'react-native-track-player';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import YtProgressBar from '../components/YtProgressBar';
-import { usePlayerContext } from '../context/PlayerModalProvider';
+import { usePlayerContext } from '../context/PlayerContext';
+import { useTheme } from '../context/ThemeContext';
 import { formatTimeSeconds, parseDurationToSeconds } from '../utils/timeFormatter';
 
 export default function PlayerScreen() {
@@ -30,7 +32,11 @@ export default function PlayerScreen() {
     setIsQueueOpen,
   } = usePlayerContext();
 
+  const { isDarkMode, colors } = useTheme();
   const [liked, setLiked] = useState(false);
+  const [scrubbingSeconds, setScrubbingSeconds] = useState<number | null>(null);
+
+  const { position, duration } = useProgress(250);
 
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -43,18 +49,34 @@ export default function PlayerScreen() {
   );
   const bottomPadding = Math.max(insets.bottom, 16);
 
-  const fallbackDuration =
-    currentSong?.durationSeconds ||
-    parseDurationToSeconds(currentSong?.duration) ||
-    playbackStatus.durationSeconds ||
-    1;
-  const durationSeconds =
-    playbackStatus.durationSeconds && playbackStatus.durationSeconds > 0
-      ? playbackStatus.durationSeconds
-      : fallbackDuration;
+  // Clear any active scrubbing state whenever the song changes
+  useEffect(() => {
+    setScrubbingSeconds(null);
+  }, [currentSong?.path]);
 
-  const currentSeconds = playbackStatus.currentPositionSeconds || 0;
-  const remainingSeconds = Math.max(0, durationSeconds - currentSeconds);
+  // Exact song duration determined strictly by the active track
+  const songLength =
+    currentSong?.durationSeconds && currentSong.durationSeconds > 0
+      ? currentSong.durationSeconds
+      : parseDurationToSeconds(currentSong?.duration);
+
+  const activeDuration =
+    songLength > 0
+      ? songLength
+      : duration > 0
+      ? duration
+      : playbackStatus.durationSeconds > 0
+      ? playbackStatus.durationSeconds
+      : 1;
+
+  const currentSeconds =
+    scrubbingSeconds !== null
+      ? scrubbingSeconds
+      : playbackStatus.currentPositionSeconds > 0
+      ? playbackStatus.currentPositionSeconds
+      : position;
+
+  const remainingSeconds = Math.max(0, activeDuration - currentSeconds);
 
   const getModeIconAndLabel = () => {
     switch (playbackMode) {
@@ -64,14 +86,16 @@ export default function PlayerScreen() {
         return { icon: 'repeat', label: 'Tekrar Çal', color: '#3b82f6' };
       case 'sequential':
       default:
-        return { icon: 'reorder-two', label: 'Sırayla Çal', color: '#a1a1aa' };
+        return { icon: 'reorder-two', label: 'Sırayla Çal', color: colors.textSecondary };
     }
   };
 
   const modeInfo = getModeIconAndLabel();
 
   return (
-    <View className="flex-1 bg-black">
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
+      <StatusBar barStyle={colors.statusBar} />
+
       {/* HEADER */}
       <View
         className="flex-row items-center justify-between px-5 pb-2"
@@ -82,10 +106,13 @@ export default function PlayerScreen() {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           className="p-1"
         >
-          <Ionicons name="chevron-down" size={28} color="#fff" />
+          <Ionicons name="chevron-down" size={28} color={colors.iconColor} />
         </TouchableOpacity>
 
-        <Text className="text-white text-base font-semibold">
+        <Text
+          className="text-base font-semibold"
+          style={{ color: colors.textPrimary }}
+        >
           Şimdi Çalıyor
         </Text>
 
@@ -94,7 +121,7 @@ export default function PlayerScreen() {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           className="p-1"
         >
-          <Ionicons name="list" size={24} color="#fff" />
+          <Ionicons name="list" size={24} color={colors.iconColor} />
         </TouchableOpacity>
       </View>
 
@@ -125,32 +152,52 @@ export default function PlayerScreen() {
           {/* SONG INFO */}
           <View className="flex-row items-center justify-between">
             <View className="flex-1 mr-4">
-              <Text className="text-white text-2xl font-bold" numberOfLines={1}>
+              <Text
+                className="text-2xl font-bold"
+                numberOfLines={1}
+                style={{ color: colors.textPrimary }}
+              >
                 {currentSong?.name ?? 'Şarkı Seçilmedi'}
               </Text>
 
-              <Text className="text-white/60 text-lg mt-1" numberOfLines={1}>
+              <Text
+                className="text-lg mt-1 font-medium"
+                numberOfLines={1}
+                style={{ color: colors.textSecondary }}
+              >
                 {currentSong?.artist ?? 'Bilinmeyen Sanatçı'}
               </Text>
             </View>
 
             <View className="flex-row">
               <TouchableOpacity
-                className="w-11 h-11 rounded-full bg-white/10 items-center justify-center mr-3"
+                className="w-11 h-11 rounded-full items-center justify-center mr-3 border shadow-sm"
+                style={{
+                  backgroundColor: colors.controlBg,
+                  borderColor: colors.cardBorder,
+                }}
                 onPress={() => setLiked(!liked)}
               >
                 <Ionicons
                   name={liked ? 'star' : 'star-outline'}
                   size={20}
-                  color="#fff"
+                  color={liked ? '#fbbf24' : colors.iconColor}
                 />
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="w-11 h-11 rounded-full bg-white/10 items-center justify-center"
+                className="w-11 h-11 rounded-full items-center justify-center border shadow-sm"
+                style={{
+                  backgroundColor: colors.controlBg,
+                  borderColor: colors.cardBorder,
+                }}
                 onPress={() => setIsQueueOpen(true)}
               >
-                <Ionicons name="ellipsis-horizontal" size={20} color="#fff" />
+                <Ionicons
+                  name="ellipsis-horizontal"
+                  size={20}
+                  color={colors.iconColor}
+                />
               </TouchableOpacity>
             </View>
           </View>
@@ -158,13 +205,25 @@ export default function PlayerScreen() {
           {/* YOUTUBE MUSIC CUSTOM PROGRESS BAR & TIMERS */}
           <View className="mt-4">
             <YtProgressBar
+              key={currentSong?.path || 'default-track'}
               currentSeconds={currentSeconds}
-              durationSeconds={durationSeconds}
-              onSeek={seconds => seekTo(seconds)}
+              durationSeconds={activeDuration}
+              trackColor={colors.progressTrack}
+              fillColor={colors.progressFill}
+              onSlidingChange={seconds => {
+                setScrubbingSeconds(seconds);
+              }}
+              onSeek={seconds => {
+                setScrubbingSeconds(seconds);
+                seekTo(seconds);
+                setTimeout(() => {
+                  setScrubbingSeconds(null);
+                }, 400);
+              }}
             />
 
             <View className="flex-row justify-between items-center -mt-1">
-              <Text className="text-white/60 text-xs">
+              <Text className="text-xs font-semibold" style={{ color: colors.textSecondary }}>
                 {formatTimeSeconds(currentSeconds)}
               </Text>
 
@@ -172,12 +231,17 @@ export default function PlayerScreen() {
                 <Ionicons
                   name="musical-notes"
                   size={12}
-                  color="rgba(255,255,255,0.6)"
+                  color={colors.textSecondary}
                 />
-                <Text className="text-white/60 text-xs ml-1">Dolby Atmos</Text>
+                <Text
+                  className="text-xs ml-1 font-medium"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Dolby Atmos
+                </Text>
               </View>
 
-              <Text className="text-white/60 text-xs">
+              <Text className="text-xs font-semibold" style={{ color: colors.textSecondary }}>
                 -{formatTimeSeconds(remainingSeconds)}
               </Text>
             </View>
@@ -191,13 +255,22 @@ export default function PlayerScreen() {
               className="items-center justify-center p-2"
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="refresh-circle-outline" size={32} color="#a1a1aa" />
-              <Text className="text-zinc-400 text-[10px] font-bold mt-0.5">-10sn</Text>
+              <Ionicons
+                name="refresh-circle-outline"
+                size={32}
+                color={colors.textSecondary}
+              />
+              <Text
+                className="text-[10px] font-bold mt-0.5"
+                style={{ color: colors.textSecondary }}
+              >
+                -10sn
+              </Text>
             </TouchableOpacity>
 
             {/* << Previous Track */}
             <TouchableOpacity onPress={playPreviousSong} className="p-2">
-              <Ionicons name="play-back" size={38} color="#fff" />
+              <Ionicons name="play-back" size={38} color={colors.iconColor} />
             </TouchableOpacity>
 
             {/* Play / Pause */}
@@ -205,13 +278,13 @@ export default function PlayerScreen() {
               <Ionicons
                 name={playbackStatus.isPlaying ? 'pause' : 'play'}
                 size={64}
-                color="#fff"
+                color={colors.iconColor}
               />
             </TouchableOpacity>
 
             {/* >> Next Track */}
             <TouchableOpacity onPress={playNextSong} className="p-2">
-              <Ionicons name="play-forward" size={38} color="#fff" />
+              <Ionicons name="play-forward" size={38} color={colors.iconColor} />
             </TouchableOpacity>
 
             {/* +10 sec */}
@@ -220,17 +293,39 @@ export default function PlayerScreen() {
               className="items-center justify-center p-2"
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="refresh-circle" size={32} color="#a1a1aa" />
-              <Text className="text-zinc-400 text-[10px] font-bold mt-0.5">+10sn</Text>
+              <Ionicons
+                name="refresh-circle"
+                size={32}
+                color={colors.textSecondary}
+              />
+              <Text
+                className="text-[10px] font-bold mt-0.5"
+                style={{ color: colors.textSecondary }}
+              >
+                +10sn
+              </Text>
             </TouchableOpacity>
           </View>
 
           {/* EXTRA CONTROLS: PLAYBACK MODE & QUEUE BUTTON */}
-          <View className="flex-row justify-between items-center bg-zinc-900/90 rounded-2xl p-3 mb-2 border border-zinc-800">
+          <View
+            className="flex-row justify-between items-center rounded-2xl p-3 mb-2 border shadow-sm"
+            style={{
+              backgroundColor: colors.cardBg,
+              borderColor: colors.cardBorder,
+              shadowColor: isDarkMode ? '#000000' : '#64748b',
+              shadowOpacity: isDarkMode ? 0.3 : 0.08,
+              shadowRadius: 8,
+              elevation: 2,
+            }}
+          >
             {/* Mode Button */}
             <TouchableOpacity
               onPress={togglePlaybackMode}
-              className="flex-row items-center px-3 py-2 rounded-xl bg-zinc-800"
+              className="flex-row items-center px-3 py-2 rounded-xl"
+              style={{
+                backgroundColor: colors.controlBg,
+              }}
             >
               <Ionicons
                 name={modeInfo.icon}
@@ -248,10 +343,16 @@ export default function PlayerScreen() {
             {/* Up Next / Queue Button */}
             <TouchableOpacity
               onPress={() => setIsQueueOpen(true)}
-              className="flex-row items-center px-3 py-2 rounded-xl bg-zinc-800"
+              className="flex-row items-center px-3 py-2 rounded-xl"
+              style={{
+                backgroundColor: colors.controlBg,
+              }}
             >
-              <Ionicons name="list" size={18} color="#ffffff" />
-              <Text className="text-white font-medium text-xs ml-2">
+              <Ionicons name="list" size={18} color={colors.iconColor} />
+              <Text
+                className="font-semibold text-xs ml-2"
+                style={{ color: colors.textPrimary }}
+              >
                 Sıradaki Müzikler
               </Text>
             </TouchableOpacity>

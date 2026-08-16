@@ -1,7 +1,8 @@
 import React from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { usePlayerContext } from '../context/PlayerModalProvider';
+import { usePlayerContext } from '../context/PlayerContext';
+import { useTheme } from '../context/ThemeContext';
 import EqualizerAnimation from './EqualizerAnimation';
 
 export default function MiniPlayer() {
@@ -15,11 +16,13 @@ export default function MiniPlayer() {
     closeAndStopPlayer,
   } = usePlayerContext();
 
+  const { isDarkMode, colors } = useTheme();
+
   if (!isMiniPlayerVisible || !currentSong || isModalOpen) {
     return null;
   }
 
-  const colors = [
+  const placeholderColors = [
     'bg-red-500',
     'bg-blue-500',
     'bg-green-500',
@@ -28,12 +31,21 @@ export default function MiniPlayer() {
     'bg-orange-500',
     'bg-cyan-500',
   ];
-  const bgColor = colors[(currentSong.name?.charCodeAt(0) ?? 0) % colors.length];
+  const bgColor =
+    placeholderColors[(currentSong.name?.charCodeAt(0) ?? 0) % placeholderColors.length];
 
   return (
     <Pressable
       onPress={openFullPlayer}
-      className="absolute bottom-4 left-4 right-4 h-16 bg-zinc-900/95 border border-zinc-800 rounded-2xl flex-row items-center px-3 shadow-2xl z-50"
+      className="absolute bottom-4 left-4 right-4 h-16 border rounded-2xl flex-row items-center px-3 shadow-2xl z-50"
+      style={{
+        backgroundColor: isDarkMode ? '#18181be6' : '#ffffffe6',
+        borderColor: colors.cardBorder,
+        shadowColor: isDarkMode ? '#000000' : '#64748b',
+        shadowOpacity: isDarkMode ? 0.4 : 0.15,
+        shadowRadius: 12,
+        elevation: 8,
+      }}
     >
       {/* Artwork with Equalizer Overlay */}
       <View className="relative h-11 w-11">
@@ -59,10 +71,18 @@ export default function MiniPlayer() {
 
       {/* Title & Artist */}
       <View className="flex-1 ml-3 mr-2">
-        <Text numberOfLines={1} className="text-white font-bold text-sm">
+        <Text
+          numberOfLines={1}
+          className="font-bold text-sm"
+          style={{ color: colors.textPrimary }}
+        >
           {currentSong.name}
         </Text>
-        <Text numberOfLines={1} className="text-zinc-400 text-xs mt-0.5">
+        <Text
+          numberOfLines={1}
+          className="text-xs mt-0.5 font-medium"
+          style={{ color: colors.textSecondary }}
+        >
           {currentSong.artist || 'Bilinmeyen Sanatçı'}
         </Text>
       </View>
@@ -79,7 +99,7 @@ export default function MiniPlayer() {
         <Ionicons
           name={playbackStatus.isPlaying ? 'pause' : 'play'}
           size={24}
-          color="#ffffff"
+          color={colors.iconColor}
         />
       </Pressable>
 

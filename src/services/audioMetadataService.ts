@@ -38,22 +38,30 @@ export class AudioMetadataService
 
   calculateDurationSeconds(filePath: string): Promise<number | undefined> {
     return new Promise(resolve => {
-      const sound = new Sound(filePath, '', error => {
-        if (error) {
-          resolve(undefined);
-          return;
-        }
+      const cleanPath = filePath.startsWith('file://')
+        ? filePath.replace(/^file:\/\//, '')
+        : filePath;
 
-        const duration = sound.getDuration();
-        sound.release();
+      try {
+        const sound = new Sound(cleanPath, '', error => {
+          if (error) {
+            resolve(undefined);
+            return;
+          }
 
-        if (!Number.isFinite(duration) || duration <= 0) {
-          resolve(undefined);
-          return;
-        }
+          const duration = sound.getDuration();
+          sound.release();
 
-        resolve(duration);
-      });
+          if (!Number.isFinite(duration) || duration <= 0) {
+            resolve(undefined);
+            return;
+          }
+
+          resolve(duration);
+        });
+      } catch (e) {
+        resolve(undefined);
+      }
     });
   }
 }

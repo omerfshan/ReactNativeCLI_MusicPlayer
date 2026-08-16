@@ -9,9 +9,15 @@ import { Song } from '../types/song';
 import { formatDuration } from '../utils/timeFormatter';
 import { audioMetadataService } from './audioMetadataService';
 
+type ScannedFileItem = {
+  name: string;
+  path: string;
+  isFile: () => boolean;
+};
+
 /**
- * Single Responsibility: Scan the local file system for MP3 music files.
- * Implements IMusicScanner interface and injects metadata/duration services (DIP/SRP).
+ * Single Responsibility: Scan local file system with batching & low memory footprint.
+ * Prevents EXC_RESOURCE memory watermark spikes by chunking audio decoders.
  */
 export class FileScannerService implements IMusicScanner {
   constructor(
@@ -31,6 +37,32 @@ export class FileScannerService implements IMusicScanner {
     }
   }
 
+  private async parseSingleFile(file: ScannedFileItem): Promise<Song> {
+    try {
+      const metadata = await this.metadataExtractor.extractMetadata(file.path);
+      const durationSeconds =
+        await this.durationCalculator.calculateDurationSeconds(file.path);
+
+      return {
+        name: metadata.name ?? file.name.replace(/\.mp3$/i, ''),
+        path: file.path,
+        artist: metadata.artist ?? 'Bilinmeyen Sanatçı',
+        artwork: metadata.artwork,
+        duration: formatDuration(durationSeconds),
+        durationSeconds: durationSeconds,
+      };
+    } catch (error) {
+      return {
+        name: file.name.replace(/\.mp3$/i, ''),
+        path: file.path,
+        artist: 'Bilinmeyen Sanatçı',
+        artwork: undefined,
+        duration: undefined,
+        durationSeconds: undefined,
+      };
+    }
+  }
+
   async scanMusicFolder(): Promise<Song[]> {
     await this.ensureFolderExists();
 
@@ -44,37 +76,16 @@ export class FileScannerService implements IMusicScanner {
         return [];
       }
 
-      const songs: Song[] = await Promise.all(
-        mp3Files.map(async file => {
-          try {
-            const metadata = await this.metadataExtractor.extractMetadata(
-              file.path,
-            );
-            const durationSeconds =
-              await this.durationCalculator.calculateDurationSeconds(file.path);
-
-            return {
-              name: metadata.name ?? file.name.replace(/\.mp3$/i, ''),
-              path: file.path,
-              artist: metadata.artist ?? 'Bilinmeyen Sanatçı',
-              artwork: metadata.artwork,
-              duration: formatDuration(durationSeconds),
-              durationSeconds: durationSeconds,
-            };
-          } catch (error) {
-            console.error(`[FileScannerService] Error parsing ${file.name}:`, error);
-
-            return {
-              name: file.name.replace(/\.mp3$/i, ''),
-              path: file.path,
-              artist: 'Bilinmeyen Sanatçı',
-              artwork: undefined,
-              duration: undefined,
-              durationSeconds: undefined,
-            };
-          }
-        }),
-      );
+      const songs: Song[] = [];
+      // Process in batches of 4 to prevent memory pressure
+      const BATCH_SIZE = 4;
+      for (let i = 0; i < mp3Files.length; i += BATCH_SIZE) {
+        const batch = mp3Files.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(
+          batch.map(file => this.parseSingleFile(file)),
+        );
+        songs.push(...batchResults);
+      }
 
       return songs;
     } catch (err) {

@@ -1,80 +1,44 @@
 import React, {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useState,
 } from 'react';
 import { Modal } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import QueueModal from '../components/QueueModal';
+import QueueModal from "../components/QueueModal"
 import { IAudioPlayer, PlaybackStatus } from '../interfaces/IAudioPlayer';
+import { PlaybackMode } from '../interfaces/IPlaybackStrategy';
 import PlayerScreen from '../screens/PlayerScreen';
+import { PlaybackStrategyFactory } from '../services/playbackModeStrategy';
+import { IQueueManager, queueManager } from '../services/queueManager';
 import { trackPlayerAudioService } from '../services/trackPlayerAudioService';
 import { Song } from '../types/song';
+import { parseDurationToSeconds } from '../utils/timeFormatter';
+import {
+  PlayerContext,
+  PlayerContextType,
+  usePlayerContext,
+} from './PlayerContext';
 
-export type PlaybackMode = 'sequential' | 'shuffle' | 'repeat';
-
-interface PlayerContextType {
-  currentSong: Song | null;
-  songsQueue: Song[];
-  currentIndex: number;
-  playbackStatus: PlaybackStatus;
-  playbackMode: PlaybackMode;
-  isModalOpen: boolean;
-  isMiniPlayerVisible: boolean;
-  isQueueOpen: boolean;
-  setQueue: (songs: Song[]) => void;
-  OpenPlayer: (song: Song, queue?: Song[]) => void;
-  ClosePlayer: () => void;
-  openFullPlayer: () => void;
-  playSong: (song: Song) => Promise<void>;
-  playNextSong: () => void;
-  playPreviousSong: () => void;
-  seekForward10: () => void;
-  seekBackward10: () => void;
-  togglePlayPause: () => void;
-  togglePlaybackMode: () => void;
-  seekTo: (seconds: number) => void;
-  closeAndStopPlayer: () => void;
-  setIsQueueOpen: (open: boolean) => void;
-}
-
-const PlayerContext = createContext<PlayerContextType>({
-  currentSong: null,
-  songsQueue: [],
-  currentIndex: -1,
-  playbackStatus: { isPlaying: false, currentPositionSeconds: 0, durationSeconds: 0 },
-  playbackMode: 'sequential',
-  isModalOpen: false,
-  isMiniPlayerVisible: false,
-  isQueueOpen: false,
-  setQueue: () => {},
-  OpenPlayer: () => {},
-  ClosePlayer: () => {},
-  openFullPlayer: () => {},
-  playSong: async () => {},
-  playNextSong: () => {},
-  playPreviousSong: () => {},
-  seekForward10: () => {},
-  seekBackward10: () => {},
-  togglePlayPause: () => {},
-  togglePlaybackMode: () => {},
-  seekTo: () => {},
-  closeAndStopPlayer: () => {},
-  setIsQueueOpen: () => {},
-});
-
-export const usePlayerContext = () => useContext(PlayerContext);
+export { PlayerContext, usePlayerContext };
+export type { PlaybackMode, PlayerContextType };
 
 interface PlayerModalProviderProps {
   children: React.ReactNode;
   playerService?: IAudioPlayer;
+  queueService?: IQueueManager;
 }
 
+/**
+ * SOLID Refactored Player Provider:
+ * - SRP: Acts strictly as State Coordinator between UI, Audio Engine, and Domain Strategies.
+ * - OCP: Delegates Next/Previous navigation to IPlaybackStrategy implementations.
+ * - LSP / DIP: Depends strictly on IAudioPlayer and IQueueManager abstractions.
+ */
 export const PlayerModalProvider: React.FC<PlayerModalProviderProps> = ({
   children,
   playerService = trackPlayerAudioService,
+  queueService = queueManager,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMiniPlayerVisible, setIsMiniPlayerVisible] = useState(false);
@@ -89,6 +53,7 @@ export const PlayerModalProvider: React.FC<PlayerModalProviderProps> = ({
     durationSeconds: 0,
   });
 
+  // Subscribe to audio player status changes (Observer Pattern / SRP)
   useEffect(() => {
     const unsubscribe = playerService.onStatusChange(newStatus => {
       setStatus(newStatus);
@@ -105,13 +70,25 @@ export const PlayerModalProvider: React.FC<PlayerModalProviderProps> = ({
         return;
       }
       const targetSong = queue[index];
+      const targetDuration =
+        targetSong.durationSeconds ||
+        parseDurationToSeconds(targetSong.duration) ||
+        0;
+
       setCurrentIndex(index);
       setCurrentSong(targetSong);
       setIsMiniPlayerVisible(true);
 
+      // Instantly reset duration to incoming track to prevent stale duration leak
+      setStatus({
+        isPlaying: true,
+        currentPositionSeconds: 0,
+        durationSeconds: targetDuration,
+      });
+
       try {
         await playerService.loadSong(targetSong);
-        playerService.play();
+        await playerService.play();
       } catch (err) {
         console.warn('[PlayerModalProvider] Error playing song:', err);
       }
@@ -125,26 +102,27 @@ export const PlayerModalProvider: React.FC<PlayerModalProviderProps> = ({
 
   const playSong = useCallback(
     async (targetSong: Song) => {
-      const idx = songsQueue.findIndex(s => s.path === targetSong.path);
-      if (idx !== -1) {
-        await playSongByIndex(idx, songsQueue);
-      } else {
-        const newQueue = [...songsQueue, targetSong];
-        setSongsQueue(newQueue);
-        await playSongByIndex(newQueue.length - 1, newQueue);
+      const { updatedQueue, index } = queueService.appendIfMissing(
+        songsQueue,
+        targetSong,
+      );
+      if (updatedQueue !== songsQueue) {
+        setSongsQueue(updatedQueue);
       }
+      await playSongByIndex(index, updatedQueue);
     },
-    [playSongByIndex, songsQueue],
+    [playSongByIndex, queueService, songsQueue],
   );
 
   const OpenPlayer = useCallback(
     (targetSong: Song, customQueue?: Song[]) => {
-      const activeQueue = customQueue && customQueue.length > 0 ? customQueue : songsQueue;
+      const activeQueue =
+        customQueue && customQueue.length > 0 ? customQueue : songsQueue;
       if (customQueue && customQueue.length > 0) {
         setSongsQueue(customQueue);
       }
 
-      let idx = activeQueue.findIndex(s => s.path === targetSong.path);
+      let idx = queueService.findSongIndex(activeQueue, targetSong);
       if (idx === -1) {
         idx = 0;
       }
@@ -152,7 +130,7 @@ export const PlayerModalProvider: React.FC<PlayerModalProviderProps> = ({
       playSongByIndex(idx, activeQueue);
       setIsModalOpen(true);
     },
-    [playSongByIndex, songsQueue],
+    [playSongByIndex, queueService, songsQueue],
   );
 
   const ClosePlayer = useCallback(() => {
@@ -168,60 +146,49 @@ export const PlayerModalProvider: React.FC<PlayerModalProviderProps> = ({
     }
   }, [currentSong]);
 
+  // Strategy Pattern (OCP): Calculate next track using active playback mode strategy
   const playNextSong = useCallback(() => {
     if (songsQueue.length === 0) {
       return;
     }
+    const strategy = PlaybackStrategyFactory.getStrategy(playbackMode);
+    const result = strategy.getNext(currentIndex, songsQueue);
 
-    // 1. Repeat Mode: repeat current track from 0:00
-    if (playbackMode === 'repeat') {
+    if (result.shouldRestartTrack) {
       playerService.seekTo(0);
       playerService.play();
       return;
     }
 
-    // 2. Shuffle Mode: pick a random track
-    if (playbackMode === 'shuffle') {
-      if (songsQueue.length === 1) {
-        playerService.seekTo(0);
-        playerService.play();
-        return;
-      }
-      let nextIdx = Math.floor(Math.random() * songsQueue.length);
-      if (nextIdx === currentIndex && songsQueue.length > 1) {
-        nextIdx = (currentIndex + 1) % songsQueue.length;
-      }
-      playSongByIndex(nextIdx, songsQueue);
-      return;
+    if (result.nextIndex !== -1) {
+      playSongByIndex(result.nextIndex, songsQueue);
     }
-
-    // 3. Sequential Mode: play next song in list (0 -> 1 -> 2 -> 3)
-    const nextSequentialIdx = (currentIndex + 1) % songsQueue.length;
-    playSongByIndex(nextSequentialIdx, songsQueue);
   }, [currentIndex, playSongByIndex, playbackMode, playerService, songsQueue]);
 
+  // Strategy Pattern (OCP): Calculate previous track using active playback mode strategy
   const playPreviousSong = useCallback(() => {
     if (songsQueue.length === 0) {
       return;
     }
+    const strategy = PlaybackStrategyFactory.getStrategy(playbackMode);
+    const result = strategy.getPrevious(
+      currentIndex,
+      status.currentPositionSeconds,
+      songsQueue,
+    );
 
-    // Repeat Mode: repeat current playing song from 0:00
-    if (playbackMode === 'repeat') {
+    if (result.shouldRestartTrack) {
       playerService.seekTo(0);
       playerService.play();
       return;
     }
 
-    if (status.currentPositionSeconds > 3) {
-      playerService.seekTo(0);
-      return;
+    if (result.nextIndex !== -1) {
+      playSongByIndex(result.nextIndex, songsQueue);
     }
-
-    const prevSequentialIdx = (currentIndex - 1 + songsQueue.length) % songsQueue.length;
-    playSongByIndex(prevSequentialIdx, songsQueue);
   }, [currentIndex, playSongByIndex, playbackMode, playerService, songsQueue, status.currentPositionSeconds]);
 
-  // Subscribe to track end event & lockscreen remote Next / Prev events
+  // Subscribe to native track ending and lockscreen next/prev events
   useEffect(() => {
     const unsubscribeEnd = playerService.onTrackEnded(() => {
       playNextSong();
@@ -229,15 +196,15 @@ export const PlayerModalProvider: React.FC<PlayerModalProviderProps> = ({
 
     const unsubscribeRemoteNext = playerService.onRemoteNext
       ? playerService.onRemoteNext(() => {
-          playNextSong();
-        })
-      : () => {};
+        playNextSong();
+      })
+      : () => { };
 
     const unsubscribeRemotePrev = playerService.onRemotePrevious
       ? playerService.onRemotePrevious(() => {
-          playPreviousSong();
-        })
-      : () => {};
+        playPreviousSong();
+      })
+      : () => { };
 
     return () => {
       unsubscribeEnd();
@@ -247,9 +214,14 @@ export const PlayerModalProvider: React.FC<PlayerModalProviderProps> = ({
   }, [playNextSong, playPreviousSong, playerService]);
 
   const seekForward10 = useCallback(() => {
-    const target = Math.min(status.durationSeconds || 0, status.currentPositionSeconds + 10);
+    const songDuration =
+      currentSong?.durationSeconds ||
+      parseDurationToSeconds(currentSong?.duration) ||
+      status.durationSeconds ||
+      0;
+    const target = Math.min(songDuration, status.currentPositionSeconds + 10);
     playerService.seekTo(target);
-  }, [playerService, status.currentPositionSeconds, status.durationSeconds]);
+  }, [currentSong, playerService, status.currentPositionSeconds, status.durationSeconds]);
 
   const seekBackward10 = useCallback(() => {
     const target = Math.max(0, status.currentPositionSeconds - 10);

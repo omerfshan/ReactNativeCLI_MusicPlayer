@@ -2,12 +2,14 @@ import React from 'react';
 import { FlatList, Modal, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { usePlayerContext } from '../context/PlayerModalProvider';
+import { usePlayerContext } from '../context/PlayerContext';
+import { useTheme } from '../context/ThemeContext';
 import SongCard from './SongCard';
 
 export default function QueueModal() {
   const { isQueueOpen, setIsQueueOpen, songsQueue, currentSong } =
     usePlayerContext();
+  const { isDarkMode, colors } = useTheme();
 
   if (!isQueueOpen) {
     return null;
@@ -20,22 +22,40 @@ export default function QueueModal() {
       transparent
       onRequestClose={() => setIsQueueOpen(false)}
     >
-      <View className="flex-1 bg-black/80 justify-end">
-        <SafeAreaView className="h-4/5 bg-zinc-950 rounded-t-3xl border-t border-zinc-800 px-5 pt-4 pb-6">
+      <View className="flex-1 bg-black/60 justify-end">
+        <SafeAreaView
+          className="h-4/5 rounded-t-3xl border-t px-5 pt-4 pb-6 shadow-2xl"
+          style={{
+            backgroundColor: isDarkMode ? '#09090b' : '#f8fafc',
+            borderColor: colors.cardBorder,
+          }}
+        >
           {/* Header */}
-          <View className="flex-row items-center justify-between pb-4 border-b border-zinc-800 mb-3">
+          <View
+            className="flex-row items-center justify-between pb-4 border-b mb-3"
+            style={{
+              borderColor: colors.cardBorder,
+            }}
+          >
             <View className="flex-row items-center">
-              <Ionicons name="list" size={24} color="#22c55e" />
-              <Text className="text-white text-xl font-bold ml-2">
+              <Ionicons name="list" size={24} color={colors.accent} />
+              <Text
+                className="text-xl font-bold ml-2"
+                style={{ color: colors.textPrimary }}
+              >
                 Sıradaki Müzikler
               </Text>
             </View>
 
             <Pressable
               onPress={() => setIsQueueOpen(false)}
-              className="h-10 w-10 bg-zinc-900 rounded-full items-center justify-center"
+              className="h-10 w-10 rounded-full items-center justify-center border shadow-sm"
+              style={{
+                backgroundColor: colors.cardBg,
+                borderColor: colors.cardBorder,
+              }}
             >
-              <Ionicons name="close" size={22} color="#fff" />
+              <Ionicons name="close" size={22} color={colors.iconColor} />
             </Pressable>
           </View>
 
@@ -48,9 +68,19 @@ export default function QueueModal() {
               const isPlayingThis = currentSong?.path === item.path;
               return (
                 <View
-                  className={`rounded-3xl ${
-                    isPlayingThis ? 'border border-emerald-500/50 bg-emerald-950/20' : ''
-                  }`}
+                  className="rounded-3xl"
+                  style={
+                    isPlayingThis
+                      ? {
+                          borderWidth: 1.5,
+                          borderColor: colors.accent,
+                          backgroundColor: isDarkMode
+                            ? 'rgba(34, 197, 94, 0.1)'
+                            : 'rgba(16, 185, 129, 0.1)',
+                          borderRadius: 24,
+                        }
+                      : undefined
+                  }
                 >
                   <SongCard song={item} />
                 </View>
@@ -58,7 +88,10 @@ export default function QueueModal() {
             }}
             ListEmptyComponent={
               <View className="items-center py-10">
-                <Text className="text-zinc-500 text-base">
+                <Text
+                  className="text-base font-medium"
+                  style={{ color: colors.textSecondary }}
+                >
                   Sırada başka şarkı yok
                 </Text>
               </View>
