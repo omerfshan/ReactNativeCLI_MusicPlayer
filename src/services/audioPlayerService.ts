@@ -3,7 +3,7 @@ import { IAudioPlayer, PlaybackStatus } from '../interfaces/IAudioPlayer';
 import { Song } from '../types/song';
 
 /**
- * Single Responsibility: Manage audio playback using react-native-sound.
+ * Single Responsibility: Manage audio playback with background audio capability.
  * Implements IAudioPlayer contract (DIP / OCP / ISP).
  */
 export class AudioPlayerService implements IAudioPlayer {
@@ -17,7 +17,8 @@ export class AudioPlayerService implements IAudioPlayer {
   private endListeners: Set<() => void> = new Set();
 
   constructor() {
-    Sound.setCategory('Playback');
+    // Enable background playback category on iOS
+    Sound.setCategory('Playback', true);
   }
 
   private notifyStatus(): void {

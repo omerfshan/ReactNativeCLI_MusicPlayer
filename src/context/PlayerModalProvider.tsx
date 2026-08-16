@@ -10,7 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import QueueModal from '../components/QueueModal';
 import { IAudioPlayer, PlaybackStatus } from '../interfaces/IAudioPlayer';
 import PlayerScreen from '../screens/PlayerScreen';
-import { audioPlayerService } from '../services/audioPlayerService';
+import { trackPlayerAudioService } from '../services/trackPlayerAudioService';
 import { Song } from '../types/song';
 
 export type PlaybackMode = 'sequential' | 'shuffle' | 'repeat';
@@ -74,7 +74,7 @@ interface PlayerModalProviderProps {
 
 export const PlayerModalProvider: React.FC<PlayerModalProviderProps> = ({
   children,
-  playerService = audioPlayerService,
+  playerService = trackPlayerAudioService,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMiniPlayerVisible, setIsMiniPlayerVisible] = useState(false);
@@ -221,16 +221,30 @@ export const PlayerModalProvider: React.FC<PlayerModalProviderProps> = ({
     playSongByIndex(prevSequentialIdx, songsQueue);
   }, [currentIndex, playSongByIndex, playbackMode, playerService, songsQueue, status.currentPositionSeconds]);
 
-  // Subscribe to track end event for auto-playing next song
+  // Subscribe to track end event & lockscreen remote Next / Prev events
   useEffect(() => {
     const unsubscribeEnd = playerService.onTrackEnded(() => {
       playNextSong();
     });
 
+    const unsubscribeRemoteNext = playerService.onRemoteNext
+      ? playerService.onRemoteNext(() => {
+          playNextSong();
+        })
+      : () => {};
+
+    const unsubscribeRemotePrev = playerService.onRemotePrevious
+      ? playerService.onRemotePrevious(() => {
+          playPreviousSong();
+        })
+      : () => {};
+
     return () => {
       unsubscribeEnd();
+      unsubscribeRemoteNext();
+      unsubscribeRemotePrev();
     };
-  }, [playNextSong, playerService]);
+  }, [playNextSong, playPreviousSong, playerService]);
 
   const seekForward10 = useCallback(() => {
     const target = Math.min(status.durationSeconds || 0, status.currentPositionSeconds + 10);
