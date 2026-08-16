@@ -55,10 +55,18 @@ export class AudioPlayerService implements IAudioPlayer {
     this.release();
     this.currentSong = song;
 
+    if (!song.path) {
+      return;
+    }
+
+    const isRemote =
+      song.path.startsWith('http://') || song.path.startsWith('https://');
+    const basePath = isRemote ? undefined : '';
+
     return new Promise((resolve, reject) => {
-      const sound = new Sound(song.path, '', error => {
+      const sound = new Sound(song.path, basePath as string, error => {
         if (error) {
-          console.error('[AudioPlayerService] Sound loading error:', error);
+          console.warn('[AudioPlayerService] Sound loading issue:', error);
           reject(error);
           return;
         }
@@ -89,7 +97,7 @@ export class AudioPlayerService implements IAudioPlayer {
         this.stopProgressTracker();
         this.notifyStatus();
       } else {
-        console.error('[AudioPlayerService] Playback finished with error');
+        console.warn('[AudioPlayerService] Playback stopped or failed');
         this.isPlaying = false;
         this.stopProgressTracker();
         this.notifyStatus();

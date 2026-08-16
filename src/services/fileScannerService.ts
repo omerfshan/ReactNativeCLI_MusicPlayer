@@ -21,51 +21,64 @@ export class FileScannerService implements IMusicScanner {
   ) {}
 
   private async ensureFolderExists(): Promise<void> {
-    const folderExists = await RNFS.exists(this.folderPath);
-    if (!folderExists) {
-      await RNFS.mkdir(this.folderPath);
+    try {
+      const folderExists = await RNFS.exists(this.folderPath);
+      if (!folderExists) {
+        await RNFS.mkdir(this.folderPath);
+      }
+    } catch (e) {
+      console.warn('[FileScannerService] Could not access folder:', e);
     }
   }
 
   async scanMusicFolder(): Promise<Song[]> {
     await this.ensureFolderExists();
 
-    const files = await RNFS.readDir(this.folderPath);
-    const mp3Files = files
-      .filter(file => file.isFile())
-      .filter(file => file.name.toLowerCase().endsWith('.mp3'));
+    try {
+      const files = await RNFS.readDir(this.folderPath);
+      const mp3Files = files
+        .filter(file => file.isFile())
+        .filter(file => file.name.toLowerCase().endsWith('.mp3'));
 
-    const songs: Song[] = await Promise.all(
-      mp3Files.map(async file => {
-        try {
-          const metadata = await this.metadataExtractor.extractMetadata(
-            file.path,
-          );
-          const durationSeconds =
-            await this.durationCalculator.calculateDurationSeconds(file.path);
+      if (mp3Files.length === 0) {
+        return [];
+      }
 
-          return {
-            name: metadata.name ?? file.name.replace(/\.mp3$/i, ''),
-            path: file.path,
-            artist: metadata.artist ?? 'Bilinmeyen Sanatçı',
-            artwork: metadata.artwork,
-            duration: formatDuration(durationSeconds),
-          };
-        } catch (error) {
-          console.error(`[FileScannerService] Error parsing ${file.name}:`, error);
+      const songs: Song[] = await Promise.all(
+        mp3Files.map(async file => {
+          try {
+            const metadata = await this.metadataExtractor.extractMetadata(
+              file.path,
+            );
+            const durationSeconds =
+              await this.durationCalculator.calculateDurationSeconds(file.path);
 
-          return {
-            name: file.name.replace(/\.mp3$/i, ''),
-            path: file.path,
-            artist: 'Bilinmeyen Sanatçı',
-            artwork: undefined,
-            duration: undefined,
-          };
-        }
-      }),
-    );
+            return {
+              name: metadata.name ?? file.name.replace(/\.mp3$/i, ''),
+              path: file.path,
+              artist: metadata.artist ?? 'Bilinmeyen Sanatçı',
+              artwork: metadata.artwork,
+              duration: formatDuration(durationSeconds),
+            };
+          } catch (error) {
+            console.error(`[FileScannerService] Error parsing ${file.name}:`, error);
 
-    return songs;
+            return {
+              name: file.name.replace(/\.mp3$/i, ''),
+              path: file.path,
+              artist: 'Bilinmeyen Sanatçı',
+              artwork: undefined,
+              duration: undefined,
+            };
+          }
+        }),
+      );
+
+      return songs;
+    } catch (err) {
+      console.warn('[FileScannerService] Read directory error:', err);
+      return [];
+    }
   }
 }
 
