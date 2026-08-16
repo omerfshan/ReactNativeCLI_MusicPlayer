@@ -3,9 +3,8 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-import { Modal } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import QueueModal from "../components/QueueModal"
+import { View } from 'react-native';
+import QueueModal from '../components/QueueModal';
 import { IAudioPlayer, PlaybackStatus } from '../interfaces/IAudioPlayer';
 import { PlaybackMode } from '../interfaces/IPlaybackStrategy';
 import PlayerScreen from '../screens/PlayerScreen';
@@ -196,15 +195,15 @@ export const PlayerModalProvider: React.FC<PlayerModalProviderProps> = ({
 
     const unsubscribeRemoteNext = playerService.onRemoteNext
       ? playerService.onRemoteNext(() => {
-        playNextSong();
-      })
-      : () => { };
+          playNextSong();
+        })
+      : () => {};
 
     const unsubscribeRemotePrev = playerService.onRemotePrevious
       ? playerService.onRemotePrevious(() => {
-        playPreviousSong();
-      })
-      : () => { };
+          playPreviousSong();
+        })
+      : () => {};
 
     return () => {
       unsubscribeEnd();
@@ -290,18 +289,23 @@ export const PlayerModalProvider: React.FC<PlayerModalProviderProps> = ({
     >
       {children}
 
-      <Modal
-        visible={isModalOpen}
-        animationType="slide"
-        presentationStyle="fullScreen"
-        statusBarTranslucent
-        onRequestClose={ClosePlayer}
-      >
-        <SafeAreaProvider>
+      {/* Full-Screen Player Screen Overlay (Connected to main window for seamless live theme switching) */}
+      {isModalOpen && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 999,
+            elevation: 999,
+          }}
+        >
           <PlayerScreen />
           <QueueModal />
-        </SafeAreaProvider>
-      </Modal>
+        </View>
+      )}
     </PlayerContext.Provider>
   );
 };
